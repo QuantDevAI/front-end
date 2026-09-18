@@ -1,449 +1,449 @@
+import { useRegistration } from '@/context/RegistrationContext';
+import { Image } from 'expo-image';
+import { theme } from '@/theme';
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-    useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+
+const googleButtonImage = Platform.select({
+  ios: require('../../assets/images/google-signin-ios.png'),
+  default: require('../../assets/images/google-signin-android-web.png'),
+});
 
 export default function CadastroScreen() {
-    const { width } = useWindowDimensions();
-    const [nome, setNome] = useState('');
-    const [email, setEmail] = useState('');
-    const [senha, setSenha] = useState('');
-    const [confirmarSenha, setConfirmarSenha] = useState('');
+  const { width } = useWindowDimensions();
+  const { saveAccount } = useRegistration();
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const [mostrarSenha, setMostrarSenha] = useState(false);
-    const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const responsive = useMemo(() => {
+    const isSmallScreen = width < 375;
 
-    const titleFontSize = width < 375 ? 22 : 26;
-    const subtitleFontSize = width < 375 ? 11 : 13;
+    return {
+      contentPaddingHorizontal: Math.max(width * 0.05, 15),
+      subtitleFontSize: isSmallScreen ? 11 : theme.fontSizes.bodySmall,
+      titleFontSize: isSmallScreen ? theme.fontSizes.titleSmall : theme.fontSizes.title,
+    };
+  }, [width]);
 
-     const dynamicStyles = StyleSheet.create({
-    title: {
-      fontSize: titleFontSize,
-    },
-    subtitle: {
-      fontSize: subtitleFontSize,
-    },
-    scrollContent: {
-      paddingHorizontal: Math.max(width * 0.05, 15),
-    },
-  });
+  function handleVoltar() {
+    router.back();
+  }
 
-    function handleVoltar() {
-        router.back();
+  function handleCadastro() {
+    const normalizedName = nome.trim();
+    const normalizedEmail = email.trim().toLocaleLowerCase('pt-BR');
+
+    if (!normalizedName || !normalizedEmail || !senha || !confirmarSenha) {
+      setErrorMessage('Preencha todos os campos para continuar.');
+      return;
     }
 
-    function handleCadastro() {
-        console.log('Nome:', nome);
-        console.log('E-mail:', email);
-        console.log('Senha:', senha);
-        console.log('Confirmar senha:', confirmarSenha);
-
-        // Depois vamos colocar aqui a chamada para a API.
+    if (!normalizedEmail.includes('@')) {
+      setErrorMessage('Digite um e-mail válido.');
+      return;
     }
 
-    function handleGoogle() {
-        console.log('Cadastro com Google');
-
-        // Depois vamos implementar o login/cadastro com Google.
+    if (senha.length < 6) {
+      setErrorMessage('A senha precisa ter pelo menos 6 caracteres.');
+      return;
     }
 
-    function handleLogin() {
-        router.push('/login');
+    if (senha !== confirmarSenha) {
+      setErrorMessage('As senhas informadas não coincidem.');
+      return;
     }
 
-    return (
-        <View style={styles.container}>
-            <LinearGradient
-                colors={['#160A0A', '#090909']}
-                style={styles.background}
+    setErrorMessage(null);
+
+    saveAccount({
+      email: normalizedEmail,
+      name: normalizedName,
+      password: senha,
+    });
+
+    router.push('/preferencias-generos');
+  }
+
+  function handleGoogle() {
+    setErrorMessage('O cadastro com Google ainda não está disponível.');
+  }
+
+  function handleLogin() {
+    router.push('/login');
+  }
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient colors={theme.gradients.auth} style={styles.background}>
+        <SafeAreaView style={styles.safeArea}>
+          <KeyboardAvoidingView
+            style={styles.keyboardContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <ScrollView
+              contentContainerStyle={[
+                styles.scrollContent,
+                {
+                  paddingHorizontal: responsive.contentPaddingHorizontal,
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-                <SafeAreaView style={styles.safeArea}>
-                    <KeyboardAvoidingView
-                        style={styles.keyboardContainer}
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    >
-                        <ScrollView
-                            contentContainerStyle={[styles.scrollContent, dynamicStyles.scrollContent]}
-                            keyboardShouldPersistTaps="handled"
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {/* Botão voltar */}
-                            <Pressable
-                                style={styles.backButton}
-                                onPress={handleVoltar}
-                            >
-                                <MaterialIcons
-                                    name="arrow-back-ios"
-                                    size={18}
-                                    color="#777777"
-                                />
-                            </Pressable>
+              <Pressable
+                accessibilityLabel="Voltar"
+                accessibilityRole="button"
+                style={styles.backButton}
+                onPress={handleVoltar}
+              >
+                <MaterialIcons
+                  name="arrow-back-ios"
+                  size={theme.fontSizes.icon}
+                  color={theme.colors.textSecondary}
+                />
+              </Pressable>
 
-                            {/* Título */}
-                            <View style={styles.header}>
-                                <Text style={[styles.title, dynamicStyles.title]}>
-                                    Criar conta
-                                </Text>
+              <View style={styles.header}>
+                <Text
+                  style={[
+                    styles.title,
+                    {
+                      fontSize: responsive.titleFontSize,
+                    },
+                  ]}
+                >
+                  Criar conta
+                </Text>
 
-                                <Text style={[styles.subtitle, dynamicStyles.subtitle]}>
-                                    Comece sua jornada cinematográfica
-                                </Text>
-                            </View>
+                <Text
+                  style={[
+                    styles.subtitle,
+                    {
+                      fontSize: responsive.subtitleFontSize,
+                    },
+                  ]}
+                >
+                  Comece sua jornada cinematográfica
+                </Text>
+              </View>
 
-                            {/* Nome */}
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
-                                    Nome
-                                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nome</Text>
 
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Seu nome"
-                                    placeholderTextColor="#5C5C66"
-                                    value={nome}
-                                    onChangeText={setNome}
-                                    autoCapitalize="words"
-                                    autoCorrect={false}
-                                />
-                            </View>
+                <TextInput
+                  accessibilityLabel="Nome"
+                  style={styles.input}
+                  placeholder="Seu nome"
+                  placeholderTextColor={theme.colors.placeholder}
+                  value={nome}
+                  onChangeText={setNome}
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  textContentType="name"
+                />
+              </View>
 
-                            {/* E-mail */}
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
-                                    E-mail
-                                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail</Text>
 
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="seu@email.com"
-                                    placeholderTextColor="#5C5C66"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                            </View>
+                <TextInput
+                  accessibilityLabel="E-mail"
+                  style={styles.input}
+                  placeholder="seu@email.com"
+                  placeholderTextColor={theme.colors.placeholder}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  textContentType="emailAddress"
+                />
+              </View>
 
-                            {/* Senha */}
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
-                                    Senha
-                                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Senha</Text>
 
-                                <View style={styles.passwordContainer}>
-                                    <TextInput
-                                        style={styles.passwordInput}
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#5C5C66"
-                                        value={senha}
-                                        onChangeText={setSenha}
-                                        secureTextEntry={!mostrarSenha}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    accessibilityLabel="Senha"
+                    style={styles.passwordInput}
+                    placeholder="••••••••"
+                    placeholderTextColor={theme.colors.placeholder}
+                    value={senha}
+                    onChangeText={setSenha}
+                    secureTextEntry={!mostrarSenha}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                    textContentType="newPassword"
+                  />
 
-                                    <Pressable
-                                        style={styles.eyeButton}
-                                        onPress={() => setMostrarSenha(!mostrarSenha)}
-                                    >
-                                        <MaterialIcons
-                                            name={
-                                                mostrarSenha
-                                                    ? 'visibility'
-                                                    : 'visibility-off'
-                                            }
-                                            size={18}
-                                            color="#66666F"
-                                        />
-                                    </Pressable>
-                                </View>
-                            </View>
+                  <Pressable
+                    accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    accessibilityRole="button"
+                    style={styles.eyeButton}
+                    onPress={() => setMostrarSenha((valorAtual) => !valorAtual)}
+                  >
+                    <MaterialIcons
+                      name={mostrarSenha ? 'visibility' : 'visibility-off'}
+                      size={theme.fontSizes.icon}
+                      color={theme.colors.iconMuted}
+                    />
+                  </Pressable>
+                </View>
+              </View>
 
-                            {/* Confirmar senha */}
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
-                                    Confirmar senha
-                                </Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirmar senha</Text>
 
-                                <View style={styles.passwordContainer}>
-                                    <TextInput
-                                        style={styles.passwordInput}
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#5C5C66"
-                                        value={confirmarSenha}
-                                        onChangeText={setConfirmarSenha}
-                                        secureTextEntry={!mostrarConfirmarSenha}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    accessibilityLabel="Confirmar senha"
+                    style={styles.passwordInput}
+                    placeholder="••••••••"
+                    placeholderTextColor={theme.colors.placeholder}
+                    value={confirmarSenha}
+                    onChangeText={setConfirmarSenha}
+                    secureTextEntry={!mostrarConfirmarSenha}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    textContentType="newPassword"
+                    onSubmitEditing={handleCadastro}
+                  />
 
-                                    <Pressable
-                                        style={styles.eyeButton}
-                                        onPress={() =>
-                                            setMostrarConfirmarSenha(
-                                                !mostrarConfirmarSenha
-                                            )
-                                        }
-                                    >
-                                        <MaterialIcons
-                                            name={
-                                                mostrarConfirmarSenha
-                                                    ? 'visibility'
-                                                    : 'visibility-off'
-                                            }
-                                            size={18}
-                                            color="#66666F"
-                                        />
-                                    </Pressable>
-                                </View>
-                            </View>
+                  <Pressable
+                    accessibilityLabel={
+                      mostrarConfirmarSenha
+                        ? 'Ocultar confirmação de senha'
+                        : 'Mostrar confirmação de senha'
+                    }
+                    accessibilityRole="button"
+                    style={styles.eyeButton}
+                    onPress={() => setMostrarConfirmarSenha((valorAtual) => !valorAtual)}
+                  >
+                    <MaterialIcons
+                      name={mostrarConfirmarSenha ? 'visibility' : 'visibility-off'}
+                      size={theme.fontSizes.icon}
+                      color={theme.colors.iconMuted}
+                    />
+                  </Pressable>
+                </View>
+              </View>
 
-                            {/* Botão criar conta */}
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.createButton,
-                                    pressed && styles.buttonPressed,
-                                ]}
-                                onPress={handleCadastro}
-                            >
-                                <Text style={styles.createButtonText}>
-                                    Criar conta
-                                </Text>
-                            </Pressable>
+              {errorMessage ? (
+                <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+                  {errorMessage}
+                </Text>
+              ) : null}
 
-                            {/* Divisor */}
-                            <View style={styles.dividerContainer}>
-                                <View style={styles.divider} />
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.createButton, pressed && styles.buttonPressed]}
+                onPress={handleCadastro}
+              >
+                <Text style={styles.createButtonText}>Criar conta</Text>
+              </Pressable>
 
-                                <Text style={styles.dividerText}>
-                                    ou
-                                </Text>
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>ou</Text>
+                <View style={styles.divider} />
+              </View>
 
-                                <View style={styles.divider} />
-                            </View>
+              <Pressable
+                accessibilityLabel="Fazer login com Google"
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.googleButton,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={handleGoogle}
+              >
+                <Image
+                  source={googleButtonImage}
+                  style={styles.googleButtonImage}
+                  contentFit="contain"
+                />
+              </Pressable>
 
-                            {/* Google */}
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.googleButton,
-                                    pressed && styles.buttonPressed,
-                                ]}
-                                onPress={handleGoogle}
-                            >
-                                <Text style={styles.googleLogo}>
-                                    G
-                                </Text>
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Já tem conta?</Text>
 
-                                <Text style={styles.googleText}>
-                                    Continuar com Google
-                                </Text>
-                            </Pressable>
-
-                            {/* Login */}
-                            <View style={styles.loginContainer}>
-                                <Text style={styles.loginText}>
-                                    Já tem conta?
-                                </Text>
-
-                                <Pressable onPress={handleLogin}>
-                                    <Text style={styles.loginLink}>
-                                        Entrar
-                                    </Text>
-                                </Pressable>
-                            </View>
-                        </ScrollView>
-                    </KeyboardAvoidingView>
-                </SafeAreaView>
-            </LinearGradient>
-        </View>
-    );
+                <Pressable accessibilityRole="link" onPress={handleLogin}>
+                  <Text style={styles.loginLink}>Entrar</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </LinearGradient>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#090909',
-    },
-
-    background: {
-        flex: 1,
-    },
-
-    safeArea: {
-        flex: 1,
-    },
-
-    keyboardContainer: {
-        flex: 1,
-    },
-
-    scrollContent: {
-        flexGrow: 1,
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: 30,
-    },
-
-    backButton: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        marginBottom: 8,
-    },
-
-    header: {
-        marginBottom: 28,
-    },
-
-    title: {
-        color: '#FFFFFF',
-        fontSize: 26,
-        fontWeight: '700',
-        marginBottom: 6,
-    },
-
-    subtitle: {
-        color: '#777777',
-        fontSize: 13,
-    },
-
-    inputGroup: {
-        marginBottom: 16,
-    },
-
-    label: {
-        color: '#85858D',
-        fontSize: 12,
-        marginBottom: 8,
-    },
-
-    input: {
-        height: 50,
-        backgroundColor: '#19191D',
-        borderWidth: 1,
-        borderColor: '#33333A',
-        borderRadius: 9,
-        paddingHorizontal: 14,
-        color: '#FFFFFF',
-        fontSize: 15,
-    },
-
-    passwordContainer: {
-        height: 50,
-        backgroundColor: '#19191D',
-        borderWidth: 1,
-        borderColor: '#33333A',
-        borderRadius: 9,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-
-    passwordInput: {
-        flex: 1,
-        height: '100%',
-        paddingHorizontal: 14,
-        color: '#FFFFFF',
-        fontSize: 15,
-    },
-
-    eyeButton: {
-        width: 48,
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-    createButton: {
-        height: 50,
-        borderRadius: 9,
-        backgroundColor: '#F0000F',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 4,
-    },
-
-    createButtonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '700',
-    },
-
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 18,
-    },
-
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#2D2D31',
-    },
-
-    dividerText: {
-        color: '#777777',
-        fontSize: 12,
-        marginHorizontal: 14,
-    },
-
-    googleButton: {
-        height: 50,
-        borderRadius: 9,
-        borderWidth: 1,
-        borderColor: '#36363C',
-        backgroundColor: '#19191D',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-    googleLogo: {
-        color: '#4285F4',
-        fontSize: 18,
-        fontWeight: '700',
-        marginRight: 9,
-    },
-
-    googleText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-
-    loginContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 26,
-    },
-
-    loginText: {
-        color: '#777777',
-        fontSize: 12,
-    },
-
-    loginLink: {
-        color: '#F0000F',
-        fontSize: 12,
-        fontWeight: '600',
-        marginLeft: 4,
-    },
-
-    buttonPressed: {
-        opacity: 0.7,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  background: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: theme.spacing.md,
+    paddingBottom: 30,
+  },
+  backButton: {
+    width: theme.sizes.iconButton,
+    height: theme.sizes.iconButton,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.sm,
+  },
+  header: {
+    marginBottom: theme.spacing.xxxl,
+  },
+  title: {
+    color: theme.colors.text,
+    fontWeight: theme.fontWeights.bold,
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: theme.colors.textSecondary,
+  },
+  inputGroup: {
+    marginBottom: theme.spacing.lg,
+  },
+  label: {
+    color: theme.colors.textMuted,
+    fontSize: theme.fontSizes.small,
+    marginBottom: theme.spacing.sm,
+  },
+  input: {
+    height: theme.sizes.control,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radii.sm,
+    paddingHorizontal: theme.spacing.input,
+    color: theme.colors.text,
+    fontSize: theme.fontSizes.input,
+  },
+  passwordContainer: {
+    height: theme.sizes.control,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radii.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: theme.spacing.input,
+    color: theme.colors.text,
+    fontSize: theme.fontSizes.input,
+  },
+  eyeButton: {
+    width: theme.sizes.passwordAction,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  createButton: {
+    height: theme.sizes.control,
+    borderRadius: theme.radii.sm,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: theme.spacing.xs,
+  },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: theme.fontSizes.small,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  createButtonText: {
+    color: theme.colors.text,
+    fontSize: theme.fontSizes.body,
+    fontWeight: theme.fontWeights.bold,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.colors.divider,
+  },
+  dividerText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSizes.small,
+    marginHorizontal: theme.fontSizes.body,
+  },
+  googleButton: {
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleButtonImage: {
+    width: 225,
+    height: 50,
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 26,
+  },
+  loginText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSizes.small,
+  },
+  loginLink: {
+    color: theme.colors.primary,
+    fontSize: theme.fontSizes.small,
+    fontWeight: theme.fontWeights.semiBold,
+    marginLeft: theme.spacing.xs,
+  },
+  buttonPressed: {
+    opacity: theme.opacity.pressed,
+  },
 });
