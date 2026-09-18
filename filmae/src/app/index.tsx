@@ -1,374 +1,265 @@
+import { appBootstrapService } from '@/services/app-bootstrap.service';
+import { theme } from '@/theme';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-  ScrollView,
-  Animated,
-} from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function OnboardingScreen() {
-  const { width, height } = useWindowDimensions();
+const MINIMUM_SPLASH_TIME_MS = 1800;
 
-  // Valores responsivos baseados no tamanho da tela
-  const dynamicStyles = useMemo(() => {
-    const isSmallScreen = height < 700;
-    const isMobileScreen = width < 375;
-
-    return {
-      mascotSize: Math.min(width * 0.5, 240),
-      paddingHorizontal: Math.max(width * 0.07, 20),
-      paddingVertical: isSmallScreen ? 10 : 20,
-      titleFontSize: isMobileScreen ? 26 : 32,
-      subtitleFontSize: isMobileScreen ? 13 : 15,
-      benefitCardHeight: isMobileScreen ? 56 : 64,
-      benefitEmojiFontSize: isMobileScreen ? 20 : 24,
-      startButtonHeight: isMobileScreen ? 48 : 52,
-      loginButtonHeight: isMobileScreen ? 42 : 46,
-    };
-  }, [width, height]);
-
-  function handleComecar() {
-    router.push('/cadastro');
-  }
-
-  function handleLogin() {
-    router.push('/login');
-  }
-
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#0A0A0A', '#1A0A0A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.background}
-      >
-        <SafeAreaView
-          style={[
-            styles.safeArea,
-            {
-              paddingHorizontal: dynamicStyles.paddingHorizontal,
-              paddingVertical: dynamicStyles.paddingVertical,
-            },
-          ]}
-        >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-            bounces={false}
-          >
-            {/* Mascote com efeito de sombra */}
-            <View style={styles.mascotContainer}>
-              <View style={[styles.mascotShadow, { width: dynamicStyles.mascotSize }]}>
-                <Image
-                  source={require('../../assets/images/filmae-mascote.png')}
-                  style={{
-                    width: dynamicStyles.mascotSize,
-                    height: dynamicStyles.mascotSize,
-                  }}
-                  contentFit="contain"
-                />
-              </View>
-            </View>
-
-            {/* Título e Subtítulo */}
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.title,
-                  { fontSize: dynamicStyles.titleFontSize },
-                ]}
-              >
-                Seu novo parceiro
-              </Text>
-
-              <View style={styles.titleHighlight}>
-                <Text
-                  style={[
-                    styles.titleBold,
-                    { fontSize: dynamicStyles.titleFontSize },
-                  ]}
-                >
-                  de cinema.
-                </Text>
-              </View>
-
-              <Text
-                style={[
-                  styles.subtitle,
-                  { fontSize: dynamicStyles.subtitleFontSize },
-                ]}
-              >
-                Você assiste. O Filmaê aprende.
-              </Text>
-            </View>
-
-            {/* Benefícios */}
-            <View style={styles.benefitsContainer}>
-              <BenefitCard
-                emoji="🎬"
-                title="Registrar"
-                description="Anote tudo que assistiu"
-                height={dynamicStyles.benefitCardHeight}
-                emojiFontSize={dynamicStyles.benefitEmojiFontSize}
-              />
-
-              <BenefitCard
-                emoji="🤖"
-                title="Entender"
-                description="A IA aprende seu gosto"
-                height={dynamicStyles.benefitCardHeight}
-                emojiFontSize={dynamicStyles.benefitEmojiFontSize}
-              />
-
-              <BenefitCard
-                emoji="✨"
-                title="Descobrir"
-                description="Recomendações personalizadas"
-                height={dynamicStyles.benefitCardHeight}
-                emojiFontSize={dynamicStyles.benefitEmojiFontSize}
-              />
-            </View>
-          </ScrollView>
-
-          {/* Botões */}
-          <View style={styles.buttonsContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.startButton,
-                { height: dynamicStyles.startButtonHeight },
-                pressed && styles.startButtonPressed,
-              ]}
-              onPress={handleComecar}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={['#FF0000', '#CC0000']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.startButtonGradient}
-              >
-                <Text style={styles.startButtonText}>Começar</Text>
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.loginButton,
-                { height: dynamicStyles.loginButtonHeight },
-                pressed && styles.loginButtonPressed,
-              ]}
-              onPress={handleLogin}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.loginButtonText}>Já tenho uma conta</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-    </View>
-  );
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
-function BenefitCard({ emoji, title, description, height, emojiFontSize }) {
-  return (
-    <Pressable style={[styles.benefitCard, { height }]} activeOpacity={0.7}>
-      <LinearGradient
-        colors={['#FFF5E1', '#FFF0D2']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.benefitCardGradient}
-      >
-        <Text style={[styles.emoji, { fontSize: emojiFontSize }]}>
-          {emoji}
-        </Text>
+export default function SplashScreen() {
+  const { height, width } = useWindowDimensions();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [logoAnimation] = useState(() => new Animated.Value(0));
+  const [dotAnimation] = useState(() => new Animated.Value(0));
+  const mountedRef = useRef(true);
+  const runningRef = useRef(false);
 
-        <View style={styles.benefitTextContainer}>
-          <Text style={styles.benefitTitle}>{title}</Text>
-          <Text style={styles.benefitDescription}>{description}</Text>
-        </View>
-      </LinearGradient>
-    </Pressable>
+  const responsive = useMemo(
+    () => ({
+      frameBottom: Math.max(height * 0.11, 70),
+      frameTop: Math.max(height * 0.11, 70),
+      imageSize: Math.min(width * 0.68, 270),
+    }),
+    [height, width],
+  );
+
+  const initializeApp = useCallback(async () => {
+    if (runningRef.current) {
+      return;
+    }
+
+    runningRef.current = true;
+    setErrorMessage(null);
+
+    try {
+      const [result] = await Promise.all([
+        appBootstrapService.initialize(),
+        wait(MINIMUM_SPLASH_TIME_MS),
+      ]);
+
+      if (mountedRef.current) {
+        router.replace(result.initialRoute);
+      }
+    } catch (error: unknown) {
+      if (mountedRef.current) {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível iniciar o aplicativo.';
+
+        setErrorMessage(message);
+        runningRef.current = false;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    const logoEntry = Animated.timing(logoAnimation, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+    });
+
+    const dotsLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotAnimation, {
+          toValue: 1,
+          duration: 550,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotAnimation, {
+          toValue: 0,
+          duration: 550,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    logoEntry.start();
+    dotsLoop.start();
+    void initializeApp();
+
+    return () => {
+      mountedRef.current = false;
+      logoEntry.stop();
+      dotsLoop.stop();
+    };
+  }, [dotAnimation, initializeApp, logoAnimation]);
+
+  const logoStyle = {
+    opacity: logoAnimation,
+    transform: [
+      {
+        translateY: logoAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [28, 0],
+        }),
+      },
+    ],
+  };
+
+  return (
+    <LinearGradient
+      colors={theme.gradients.splash}
+      start={{ x: 0.15, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
+      <View style={styles.topGlow} />
+      <View style={styles.bottomShadow} />
+
+      <View
+        style={[
+          styles.frame,
+          {
+            bottom: responsive.frameBottom,
+            top: responsive.frameTop,
+          },
+        ]}
+      />
+
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View style={[styles.content, logoStyle]}>
+          <Image
+            accessibilityLabel="Filmaê"
+            source={require('../../assets/images/logo.png')}
+            style={{
+              height: responsive.imageSize,
+              width: responsive.imageSize,
+            }}
+            contentFit="contain"
+          />
+
+          <Text style={styles.tagline}>SEU CINEMA. DO SEU JEITO.</Text>
+
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+                {errorMessage}
+              </Text>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void initializeApp()}
+                style={({ pressed }) => [styles.retryButton, pressed && styles.retryPressed]}
+              >
+                <Text style={styles.retryText}>Tentar novamente</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View accessibilityLabel="Carregando aplicativo" style={styles.dotsContainer}>
+              {[0, 1, 2].map((dot) => {
+                const opacity = dotAnimation.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange:
+                    dot === 1
+                      ? [0.55, 1, 0.55]
+                      : dot === 0
+                        ? [1, 0.55, 1]
+                        : [0.55, 0.7, 0.55],
+                });
+
+                return <Animated.View key={dot} style={[styles.dot, { opacity }]} />;
+              })}
+            </View>
+          )}
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    overflow: 'hidden',
   },
-
-  background: {
-    flex: 1,
-  },
-
   safeArea: {
     flex: 1,
-    justifyContent: 'space-between',
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-  },
-
-  mascotContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 24,
   },
-
-  mascotShadow: {
-    borderRadius: 150,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(240, 0, 15, 0.05)',
-    padding: 8,
+  topGlow: {
+    position: 'absolute',
+    width: 290,
+    height: 290,
+    borderRadius: theme.radii.round,
+    right: -96,
+    top: -80,
+    backgroundColor: theme.colors.creamTransparent,
   },
-
-  titleContainer: {
+  bottomShadow: {
+    position: 'absolute',
+    width: 290,
+    height: 290,
+    borderRadius: theme.radii.round,
+    left: -96,
+    bottom: -96,
+    backgroundColor: theme.colors.darkTransparent,
+  },
+  frame: {
+    position: 'absolute',
+    left: 28,
+    right: 28,
+    borderWidth: 1,
+    borderColor: theme.colors.warmBorder,
+    borderRadius: 42,
+  },
+  content: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingHorizontal: theme.spacing.xxl,
   },
-
-  title: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+  tagline: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    fontWeight: theme.fontWeights.semiBold,
+    letterSpacing: 2,
+    marginTop: theme.spacing.xxl,
     textAlign: 'center',
-    lineHeight: 40,
-    letterSpacing: -0.5,
   },
-
-  titleHighlight: {
-    marginTop: 4,
-  },
-
-  titleBold: {
-    color: '#FF0000',
-    fontWeight: '800',
-    textAlign: 'center',
-    lineHeight: 40,
-    letterSpacing: -0.5,
-  },
-
-  subtitle: {
-    color: '#999999',
-    marginTop: 16,
-    textAlign: 'center',
-    fontWeight: '400',
-    lineHeight: 20,
-    letterSpacing: 0.3,
-  },
-
-  benefitsContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-
-  benefitCard: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-
-  benefitCardGradient: {
-    flex: 1,
+  dotsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: theme.spacing.sm,
+    marginTop: 40,
   },
-
-  emoji: {
-    width: 40,
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: theme.radii.round,
+    backgroundColor: theme.colors.cream,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    marginTop: theme.spacing.xxl,
+  },
+  errorText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
     textAlign: 'center',
-    marginRight: 12,
   },
-
-  benefitTextContainer: {
-    flex: 1,
+  retryButton: {
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.cream,
   },
-
-  benefitTitle: {
-    color: '#1A1A1A',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 16,
+  retryPressed: {
+    opacity: theme.opacity.pressed,
   },
-
-  benefitDescription: {
-    color: '#555555',
-    fontSize: 10,
-    marginTop: 3,
-    lineHeight: 14,
-    fontWeight: '400',
-  },
-
-  buttonsContainer: {
-    gap: 10,
-    marginTop: 16,
-  },
-
-  startButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#FF0000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-
-  startButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  startButtonPressed: {
-    opacity: 0.85,
-  },
-
-  loginButton: {
-    borderRadius: 12,
-    backgroundColor: '#1A1A1A',
-    borderWidth: 1.5,
-    borderColor: '#333333',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-
-  loginButtonPressed: {
-    backgroundColor: '#252525',
+  retryText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.body,
+    fontWeight: theme.fontWeights.semiBold,
   },
 });
