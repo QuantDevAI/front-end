@@ -23,7 +23,7 @@ type RegistrationContextValue = {
 
 const RegistrationContext = createContext<RegistrationContextValue | null>(null);
 
-function RegistrationProvider({ children }: PropsWithChildren) {
+export function RegistrationProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<RegistrationAccount | null>(null);
   const [cinephileStory, setCinephileStory] = useState('');
   const [genreIds, setGenreIds] = useState<string[]>([]);
@@ -104,4 +104,3 @@ export function useRegistration() {
 
   return context;
 }
-export default RegistrationProvider;

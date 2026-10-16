@@ -1,5 +1,6 @@
 import { useRegistration } from '@/context/RegistrationContext';
-import { registrationService } from '@/services/registration.service';
+import { setPendingAuthLoadingTask } from '@/services/auth-loading.service';
+import { onboardingService } from '@/services/onboarding.service';
 import { theme } from '@/theme';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -47,9 +48,7 @@ export default function CinephileProfileScreen() {
 
   function appendPrompt(prompt: string) {
     setStory((currentStory) => {
-      const nextStory = currentStory.trim()
-        ? `${currentStory.trim()}. ${prompt}`
-        : prompt;
+      const nextStory = currentStory.trim() ? `${currentStory.trim()}. ${prompt}` : prompt;
 
       return nextStory.slice(0, STORY_MAX_LENGTH);
     });
@@ -71,25 +70,26 @@ export default function CinephileProfileScreen() {
     setIsSubmitting(true);
     saveCinephileStory(normalizedStory);
 
-    try {
-      await registrationService.completeRegistration({
-        ...account,
-        cinephileStory: normalizedStory,
-        favoriteMovieIds,
-        genreIds,
-      });
+    setPendingAuthLoadingTask({
+      mode: 'profile',
+      run: async () => {
+        await onboardingService.saveGenres({
+          genres: genreIds,
+        });
+        await onboardingService.saveFavoriteMovies({
+          movieIds: favoriteMovieIds,
+        });
+        await onboardingService.saveProfileStory({
+          text: normalizedStory,
+        });
+        await onboardingService.completeOnboarding();
 
-      clearRegistration();
-      router.replace('/login');
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível finalizar o cadastro.';
+        clearRegistration();
+        return '/perfil-criado';
+      },
+    });
 
-      setErrorMessage(message);
-      setIsSubmitting(false);
-    }
+    router.replace('/auth-loading');
   }
 
   function handleSkip() {
@@ -138,8 +138,8 @@ export default function CinephileProfileScreen() {
           <Text style={styles.title}>Conte seu lado cinéfilo.</Text>
 
           <Text style={styles.subtitle}>
-            Quanto mais contexto você der, melhor o Pipoca.i entende o que
-            realmente funciona para você.
+            Quanto mais contexto você der, melhor o Pipoca.i entende o que realmente funciona para
+            você.
           </Text>
         </View>
 
@@ -163,9 +163,7 @@ export default function CinephileProfileScreen() {
             </Text>
           </View>
 
-          <Text style={styles.inputLabel}>
-            Como é uma sessão perfeita para você?
-          </Text>
+          <Text style={styles.inputLabel}>Como é uma sessão perfeita para você?</Text>
 
           <TextInput
             accessibilityLabel="Conte como é uma sessão perfeita para você"
@@ -197,10 +195,7 @@ export default function CinephileProfileScreen() {
                 accessibilityRole="button"
                 disabled={isSubmitting}
                 onPress={() => appendPrompt(prompt)}
-                style={({ pressed }) => [
-                  styles.promptChip,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.promptChip, pressed && styles.pressed]}
               >
                 <Text style={styles.promptText}>{prompt}</Text>
               </Pressable>

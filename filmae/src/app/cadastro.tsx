@@ -1,3 +1,6 @@
+import { setPendingAuthLoadingTask } from '@/services/auth-loading.service';
+import { authService } from '@/services/auth.service';
+import { onboardingService } from '@/services/onboarding.service';
 import { useRegistration } from '@/context/RegistrationContext';
 import { Image } from 'expo-image';
 import { theme } from '@/theme';
@@ -33,6 +36,7 @@ export default function CadastroScreen() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const responsive = useMemo(() => {
     const isSmallScreen = width < 375;
@@ -49,6 +53,10 @@ export default function CadastroScreen() {
   }
 
   function handleCadastro() {
+    if (isSubmitting) {
+      return;
+    }
+
     const normalizedName = nome.trim();
     const normalizedEmail = email.trim().toLocaleLowerCase('pt-BR');
 
@@ -73,18 +81,58 @@ export default function CadastroScreen() {
     }
 
     setErrorMessage(null);
+    setIsSubmitting(true);
 
-    saveAccount({
-      email: normalizedEmail,
-      name: normalizedName,
-      password: senha,
+    setPendingAuthLoadingTask({
+      mode: 'register',
+      run: async () => {
+        await authService.register({
+          email: normalizedEmail,
+          name: normalizedName,
+          password: senha,
+        });
+        onboardingService.clearMockState();
+
+        saveAccount({
+          email: normalizedEmail,
+          name: normalizedName,
+          password: senha,
+        });
+
+        return '/preferencias-generos';
+      },
     });
 
-    router.push('/preferencias-generos');
+    router.replace('/auth-loading');
   }
 
   function handleGoogle() {
-    setErrorMessage('O cadastro com Google ainda não está disponível.');
+    if (isSubmitting) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    setPendingAuthLoadingTask({
+      mode: 'register',
+      run: async () => {
+        await authService.loginWithGoogle({
+          idToken: 'mock-google-id-token',
+        });
+        onboardingService.clearMockState();
+
+        saveAccount({
+          email: 'usuario.google@filmae.app',
+          name: 'Usuário Google',
+          password: 'oauth-google',
+        });
+
+        return '/preferencias-generos';
+      },
+    });
+
+    router.replace('/auth-loading');
   }
 
   function handleLogin() {
@@ -206,6 +254,7 @@ export default function CadastroScreen() {
                     accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                     accessibilityRole="button"
                     style={styles.eyeButton}
+                    disabled={isSubmitting}
                     onPress={() => setMostrarSenha((valorAtual) => !valorAtual)}
                   >
                     <MaterialIcons
@@ -245,6 +294,7 @@ export default function CadastroScreen() {
                     }
                     accessibilityRole="button"
                     style={styles.eyeButton}
+                    disabled={isSubmitting}
                     onPress={() => setMostrarConfirmarSenha((valorAtual) => !valorAtual)}
                   >
                     <MaterialIcons
@@ -264,10 +314,21 @@ export default function CadastroScreen() {
 
               <Pressable
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.createButton, pressed && styles.buttonPressed]}
+                accessibilityState={{
+                  busy: isSubmitting,
+                  disabled: isSubmitting,
+                }}
+                disabled={isSubmitting}
+                style={({ pressed }) => [
+                  styles.createButton,
+                  isSubmitting && styles.createButtonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
                 onPress={handleCadastro}
               >
-                <Text style={styles.createButtonText}>Criar conta</Text>
+                <Text style={styles.createButtonText}>
+                  {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+                </Text>
               </Pressable>
 
               <View style={styles.dividerContainer}>
@@ -279,8 +340,14 @@ export default function CadastroScreen() {
               <Pressable
                 accessibilityLabel="Fazer login com Google"
                 accessibilityRole="button"
+                accessibilityState={{
+                  busy: isSubmitting,
+                  disabled: isSubmitting,
+                }}
+                disabled={isSubmitting}
                 style={({ pressed }) => [
                   styles.googleButton,
+                  isSubmitting && styles.googleButtonDisabled,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={handleGoogle}
@@ -392,6 +459,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: theme.spacing.xs,
   },
+  createButtonDisabled: {
+    opacity: theme.opacity.pressedSoft,
+  },
   errorText: {
     color: theme.colors.danger,
     fontSize: theme.fontSizes.small,
@@ -422,6 +492,9 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  googleButtonDisabled: {
+    opacity: theme.opacity.pressedSoft,
   },
   googleButtonImage: {
     width: 225,
