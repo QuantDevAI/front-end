@@ -232,8 +232,11 @@ export function toMovieListItem(
   userState: MovieUserState = DEFAULT_USER_STATE,
 ): MovieListItem {
   return {
+    accentColor: movie.accentColor,
     compatibilityScore: movie.compatibilityScore,
+    director: movie.director,
     genres: movie.genres,
+    gradientColors: movie.gradientColors,
     id: movie.id,
     imdb: movie.imdb,
     runtimeMinutes: movie.runtimeMinutes,

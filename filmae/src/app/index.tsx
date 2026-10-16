@@ -161,11 +161,7 @@ export default function SplashScreen() {
                 const opacity = dotAnimation.interpolate({
                   inputRange: [0, 0.5, 1],
                   outputRange:
-                    dot === 1
-                      ? [0.55, 1, 0.55]
-                      : dot === 0
-                        ? [1, 0.55, 1]
-                        : [0.55, 0.7, 0.55],
+                    dot === 1 ? [0.55, 1, 0.55] : dot === 0 ? [1, 0.55, 1] : [0.55, 0.7, 0.55],
                 });
 
                 return <Animated.View key={dot} style={[styles.dot, { opacity }]} />;

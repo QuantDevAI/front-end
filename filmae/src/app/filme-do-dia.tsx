@@ -1,3 +1,4 @@
+import { collectionService } from '@/services/collection.service';
 import { homeService } from '@/services/home.service';
 import { moviesService } from '@/services/movies.service';
 import { theme } from '@/theme';
@@ -18,6 +19,7 @@ export default function DailyMovieScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const loadDailyMovie = useCallback(async () => {
     setIsLoading(true);
@@ -46,6 +48,43 @@ export default function DailyMovieScreen() {
       clearTimeout(timer);
     };
   }, [loadDailyMovie]);
+
+  const updateDailyMovieCollectionState = useCallback(
+    async (stateKey: 'watchlist' | 'watched', nextValue: boolean, feedbackState: FeedbackState) => {
+      if (!dailyMovie) {
+        return;
+      }
+
+      setIsSubmittingFeedback(true);
+      setErrorMessage(null);
+
+      try {
+        const result = await collectionService.upsertMovieCollectionState(dailyMovie.id, {
+          [stateKey]: nextValue,
+        });
+
+        setDailyMovie((currentMovie) => {
+          if (!currentMovie) {
+            return currentMovie;
+          }
+
+          return {
+            ...currentMovie,
+            userState: result.movie.userState,
+          };
+        });
+
+        setFeedback(feedbackState);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível atualizar sua coleção.';
+        setErrorMessage(message);
+      } finally {
+        setIsSubmittingFeedback(false);
+      }
+    },
+    [dailyMovie],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -142,7 +181,8 @@ export default function DailyMovieScreen() {
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => setFeedback('watch')}
+                    disabled={isSubmittingFeedback}
+                    onPress={() => void updateDailyMovieCollectionState('watchlist', true, 'watch')}
                     style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
                   >
                     <Text style={styles.primaryButtonText}>Quero assistir</Text>
@@ -151,7 +191,8 @@ export default function DailyMovieScreen() {
 
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setFeedback('watched')}
+                  disabled={isSubmittingFeedback}
+                  onPress={() => void updateDailyMovieCollectionState('watched', true, 'watched')}
                   style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.secondaryButtonText}>Já assisti</Text>
@@ -159,6 +200,7 @@ export default function DailyMovieScreen() {
 
                 <Pressable
                   accessibilityRole="button"
+                  disabled={isSubmittingFeedback}
                   onPress={() => {
                     setFeedback('nope');
                     router.replace('/home');
@@ -172,7 +214,8 @@ export default function DailyMovieScreen() {
               {feedback === 'watched' ? (
                 <View style={styles.infoBox}>
                   <Text style={styles.infoText}>
-                    Perfeito! Na próxima etapa vamos conectar essa ação com avaliação e coleção.
+                    Boa! Esse filme já está marcado como assistido. Você pode abrir o detalhe para
+                    registrar sua nota.
                   </Text>
                 </View>
               ) : null}

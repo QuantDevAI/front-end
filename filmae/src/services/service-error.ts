@@ -1,4 +1,4 @@
-import type { ApiErrorCode, ApiFieldError } from '@/types/api';
+import type { ApiEnvelope, ApiErrorCode, ApiFieldError } from '@/types/api';
 import { isAxiosError } from 'axios';
 
 type ServiceErrorInput = {
@@ -37,6 +37,20 @@ type BackendErrorResponse = {
   };
 };
 
+export function requireApiData<TData>(
+  payload: ApiEnvelope<TData> | undefined,
+  errorMessage: string,
+): TData {
+  if (!payload || payload.data === undefined) {
+    throw new ServiceError({
+      code: 'DEPENDENCY_UNAVAILABLE',
+      message: errorMessage,
+    });
+  }
+
+  return payload.data;
+}
+
 export function normalizeServiceError(error: unknown, fallbackMessage: string): ServiceError {
   if (error instanceof ServiceError) {
     return error;
@@ -60,7 +74,7 @@ export function normalizeServiceError(error: unknown, fallbackMessage: string): 
     return new ServiceError({
       cause: error,
       code: 'UNKNOWN_ERROR',
-      message: error.message || fallbackMessage,
+      message: fallbackMessage,
     });
   }
 

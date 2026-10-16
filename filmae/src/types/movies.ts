@@ -34,8 +34,11 @@ export type MovieCatalogItem = {
 };
 
 export type MovieListItem = {
+  accentColor: string;
   compatibilityScore: number;
+  director: string;
   genres: string[];
+  gradientColors: readonly [string, string, string, string];
   id: string;
   imdb: ImdbRating;
   runtimeMinutes: number;

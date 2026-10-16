@@ -1,6 +1,9 @@
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
+import { collectionService } from '@/services/collection.service';
 import { moviesService } from '@/services/movies.service';
+import { ratingsService } from '@/services/ratings.service';
 import { theme } from '@/theme';
+import type { CollectionStateKey, UpsertCollectionMovieRequest } from '@/types/collection';
 import { formatRuntimeMinutes, formatVotes } from '@/utils/movies';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,10 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function MovieDetailScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const movieId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [inWatchlist, setInWatchlist] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingMovieState, setIsUpdatingMovieState] = useState(false);
   const [movie, setMovie] = useState<Awaited<
     ReturnType<typeof moviesService.getMovieDetails>
   > | null>(null);
@@ -29,6 +32,7 @@ export default function MovieDetailScreen() {
 
     setIsLoading(true);
     setErrorMessage(null);
+    setActionErrorMessage(null);
 
     try {
       const result = await moviesService.getMovieDetails(movieId);
@@ -51,6 +55,121 @@ export default function MovieDetailScreen() {
       clearTimeout(timer);
     };
   }, [loadMovie]);
+
+  const buildCollectionRequest = useCallback(
+    (stateKey: CollectionStateKey, nextValue: boolean): UpsertCollectionMovieRequest => {
+      switch (stateKey) {
+        case 'favorite':
+          return { favorite: nextValue };
+        case 'rewatch':
+          return { rewatch: nextValue };
+        case 'watched':
+          return { watched: nextValue };
+        case 'watchlist':
+          return { watchlist: nextValue };
+        default:
+          return {};
+      }
+    },
+    [],
+  );
+
+  const updateCollectionState = useCallback(
+    async (stateKey: CollectionStateKey, nextValue: boolean) => {
+      if (!movieId || !movie) {
+        return;
+      }
+
+      setActionErrorMessage(null);
+      setIsUpdatingMovieState(true);
+
+      try {
+        const result = await collectionService.upsertMovieCollectionState(
+          movieId,
+          buildCollectionRequest(stateKey, nextValue),
+        );
+
+        setMovie((currentMovie) => {
+          if (!currentMovie) {
+            return currentMovie;
+          }
+
+          return {
+            ...currentMovie,
+            userState: result.movie.userState,
+          };
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível atualizar sua coleção.';
+        setActionErrorMessage(message);
+      } finally {
+        setIsUpdatingMovieState(false);
+      }
+    },
+    [buildCollectionRequest, movie, movieId],
+  );
+
+  const saveRating = useCallback(
+    async (rating: number) => {
+      if (!movieId || !movie) {
+        return;
+      }
+
+      setActionErrorMessage(null);
+      setIsUpdatingMovieState(true);
+
+      try {
+        const result = await ratingsService.saveMovieRating(movieId, { rating });
+        setMovie((currentMovie) => {
+          if (!currentMovie) {
+            return currentMovie;
+          }
+
+          return {
+            ...currentMovie,
+            userState: result.movie.userState,
+          };
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível salvar sua avaliação.';
+        setActionErrorMessage(message);
+      } finally {
+        setIsUpdatingMovieState(false);
+      }
+    },
+    [movie, movieId],
+  );
+
+  const clearRating = useCallback(async () => {
+    if (!movieId || !movie) {
+      return;
+    }
+
+    setActionErrorMessage(null);
+    setIsUpdatingMovieState(true);
+
+    try {
+      const result = await ratingsService.deleteMovieRating(movieId);
+      setMovie((currentMovie) => {
+        if (!currentMovie) {
+          return currentMovie;
+        }
+
+        return {
+          ...currentMovie,
+          userState: result.movie.userState,
+        };
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível remover sua avaliação.';
+      setActionErrorMessage(message);
+    } finally {
+      setIsUpdatingMovieState(false);
+    }
+  }, [movie, movieId]);
 
   const compatibilityText = useMemo(() => {
     if (!movie) {
@@ -108,13 +227,15 @@ export default function MovieDetailScreen() {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={isFavorite ? 'Remover dos favoritos' : 'Favoritar filme'}
-                onPress={() => setIsFavorite((currentState) => !currentState)}
+                accessibilityLabel={
+                  movie.userState.favorite ? 'Remover dos favoritos' : 'Favoritar filme'
+                }
+                onPress={() => void updateCollectionState('favorite', !movie.userState.favorite)}
                 style={({ pressed }) => [styles.heroActionRight, pressed && styles.pressed]}
               >
                 <MaterialIcons
                   color={theme.colors.primary}
-                  name={isFavorite ? 'favorite' : 'favorite-border'}
+                  name={movie.userState.favorite ? 'favorite' : 'favorite-border'}
                   size={22}
                 />
               </Pressable>
@@ -194,51 +315,129 @@ export default function MovieDetailScreen() {
             </View>
 
             <View style={styles.actions}>
+              {actionErrorMessage ? (
+                <Text accessibilityLiveRegion="polite" style={styles.actionErrorText}>
+                  {actionErrorMessage}
+                </Text>
+              ) : null}
+
               <Pressable
                 accessibilityRole="button"
+                onPress={() => void updateCollectionState('watched', !movie.userState.watched)}
                 style={({ pressed }) => [styles.primaryAction, pressed && styles.pressed]}
               >
-                <Text style={styles.primaryActionText}>Marcar como assistido</Text>
+                <Text style={styles.primaryActionText}>
+                  {movie.userState.watched ? '✓ Assistido' : 'Marcar como assistido'}
+                </Text>
               </Pressable>
 
               <View style={styles.secondaryActionsRow}>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setInWatchlist((currentState) => !currentState)}
+                  onPress={() =>
+                    void updateCollectionState('watchlist', !movie.userState.watchlist)
+                  }
                   style={({ pressed }) => [
                     styles.secondaryAction,
-                    inWatchlist && styles.secondaryActionSelected,
+                    movie.userState.watchlist && styles.secondaryActionSelected,
                     pressed && styles.pressed,
                   ]}
                 >
                   <Text
                     style={[
                       styles.secondaryActionText,
-                      inWatchlist && styles.secondaryActionTextSelected,
+                      movie.userState.watchlist && styles.secondaryActionTextSelected,
                     ]}
                   >
-                    {inWatchlist ? '✓ Na lista' : '+ Quero assistir'}
+                    {movie.userState.watchlist ? '✓ Na lista' : '+ Quero assistir'}
                   </Text>
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setIsFavorite((currentState) => !currentState)}
+                  onPress={() => void updateCollectionState('favorite', !movie.userState.favorite)}
                   style={({ pressed }) => [
                     styles.secondaryAction,
-                    isFavorite && styles.secondaryActionSelected,
+                    movie.userState.favorite && styles.secondaryActionSelected,
                     pressed && styles.pressed,
                   ]}
                 >
                   <Text
                     style={[
                       styles.secondaryActionText,
-                      isFavorite && styles.secondaryActionTextSelected,
+                      movie.userState.favorite && styles.secondaryActionTextSelected,
                     ]}
                   >
-                    ♥ {isFavorite ? 'Favoritado' : 'Favoritar'}
+                    ♥ {movie.userState.favorite ? 'Favoritado' : 'Favoritar'}
                   </Text>
                 </Pressable>
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void updateCollectionState('rewatch', !movie.userState.rewatch)}
+                style={({ pressed }) => [
+                  styles.secondaryAction,
+                  movie.userState.rewatch && styles.secondaryActionSelected,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.secondaryActionText,
+                    movie.userState.rewatch && styles.secondaryActionTextSelected,
+                  ]}
+                >
+                  ↻ {movie.userState.rewatch ? 'Reassistir marcado' : 'Quero reassistir'}
+                </Text>
+              </Pressable>
+
+              <View style={styles.ratingCard}>
+                <Text style={styles.ratingTitle}>Sua avaliação</Text>
+                <View style={styles.ratingStarsRow}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Pressable
+                      key={star}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Avaliar ${star} de 5`}
+                      disabled={isUpdatingMovieState}
+                      onPress={() => void saveRating(star)}
+                      style={({ pressed }) => [styles.starButton, pressed && styles.pressed]}
+                    >
+                      <MaterialIcons
+                        color={
+                          movie.userState.rating !== null && movie.userState.rating >= star
+                            ? theme.colors.rating
+                            : theme.colors.prototypeMuted
+                        }
+                        name="star"
+                        size={22}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+
+                <View style={styles.ratingFooter}>
+                  <Text style={styles.ratingCurrentText}>
+                    {movie.userState.rating === null
+                      ? 'Você ainda não avaliou este filme.'
+                      : `Nota atual: ${movie.userState.rating}/5`}
+                  </Text>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isUpdatingMovieState || movie.userState.rating === null}
+                    onPress={() => void clearRating()}
+                    style={({ pressed }) => [
+                      styles.clearRatingButton,
+                      pressed && styles.pressed,
+                      (isUpdatingMovieState || movie.userState.rating === null) &&
+                        styles.clearRatingButtonDisabled,
+                    ]}
+                  >
+                    <Text style={styles.clearRatingText}>Limpar nota</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           </ScrollView>
@@ -484,6 +683,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xxl,
     gap: theme.spacing.sm,
   },
+  actionErrorText: {
+    color: theme.colors.danger,
+    fontSize: theme.fontSizes.small,
+    textAlign: 'center',
+  },
   primaryAction: {
     height: 50,
     borderRadius: theme.radii.xl,
@@ -521,6 +725,57 @@ const styles = StyleSheet.create({
   },
   secondaryActionTextSelected: {
     color: theme.colors.primary,
+  },
+  ratingCard: {
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.prototypeBorder,
+    backgroundColor: theme.colors.prototypeSurface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  ratingTitle: {
+    color: theme.colors.text,
+    fontSize: theme.fontSizes.small,
+    fontWeight: theme.fontWeights.semiBold,
+  },
+  ratingStarsRow: {
+    marginTop: theme.spacing.xs,
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+  },
+  starButton: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingFooter: {
+    marginTop: theme.spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  ratingCurrentText: {
+    flex: 1,
+    color: theme.colors.creamMuted,
+    fontSize: theme.fontSizes.caption,
+  },
+  clearRatingButton: {
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.prototypeBorder,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
+  },
+  clearRatingButtonDisabled: {
+    opacity: 0.5,
+  },
+  clearRatingText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSizes.caption,
+    fontWeight: theme.fontWeights.medium,
   },
   pressed: {
     opacity: theme.opacity.pressed,

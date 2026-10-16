@@ -1,6 +1,5 @@
 import { setPendingAuthLoadingTask } from '@/services/auth-loading.service';
 import { authService } from '@/services/auth.service';
-import { onboardingService } from '@/services/onboarding.service';
 import { useRegistration } from '@/context/RegistrationContext';
 import { Image } from 'expo-image';
 import { theme } from '@/theme';
@@ -91,7 +90,6 @@ export default function CadastroScreen() {
           name: normalizedName,
           password: senha,
         });
-        onboardingService.clearMockState();
 
         saveAccount({
           email: normalizedEmail,
@@ -111,28 +109,7 @@ export default function CadastroScreen() {
       return;
     }
 
-    setErrorMessage(null);
-    setIsSubmitting(true);
-
-    setPendingAuthLoadingTask({
-      mode: 'register',
-      run: async () => {
-        await authService.loginWithGoogle({
-          idToken: 'mock-google-id-token',
-        });
-        onboardingService.clearMockState();
-
-        saveAccount({
-          email: 'usuario.google@filmae.app',
-          name: 'Usuário Google',
-          password: 'oauth-google',
-        });
-
-        return '/preferencias-generos';
-      },
-    });
-
-    router.replace('/auth-loading');
+    setErrorMessage('Login com Google ainda não está disponível nesta versão. Use e-mail e senha.');
   }
 
   function handleLogin() {

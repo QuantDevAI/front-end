@@ -89,21 +89,7 @@ export default function LoginScreen() {
       return;
     }
 
-    setErrorMessage(null);
-    setIsSubmitting(true);
-
-    setPendingAuthLoadingTask({
-      mode: 'login',
-      run: async () => {
-        const result = await authService.loginWithGoogle({
-          idToken: 'mock-google-id-token',
-        });
-
-        return resolveNextRoute(result.nextScreen);
-      },
-    });
-
-    router.replace('/auth-loading');
+    setErrorMessage('Login com Google ainda não está disponível nesta versão. Use e-mail e senha.');
   }
 
   function handleCadastro() {

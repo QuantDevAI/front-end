@@ -1,6 +1,10 @@
+import { api } from '@/services/api';
+import { env } from '@/config/env';
+import { mockApi } from '@/services/mock-api';
+import { normalizeServiceError, requireApiData } from '@/services/service-error';
+import type { ApiEnvelope } from '@/types/api';
 import type {
   CompleteOnboardingResponse,
-  OnboardingMovie,
   OnboardingProgress,
   SaveOnboardingFavoriteMoviesRequest,
   SaveOnboardingFavoriteMoviesResponse,
@@ -9,7 +13,6 @@ import type {
   SaveOnboardingProfileStoryRequest,
   SaveOnboardingProfileStoryResponse,
 } from '@/types/onboarding';
-import { ServiceError } from './service-error';
 
 const ONBOARDING_ROUTES = {
   complete: '/users/me/onboarding/complete',
@@ -19,131 +22,106 @@ const ONBOARDING_ROUTES = {
   profileStory: '/users/me/onboarding/profile-story',
 } as const;
 
-const MOCK_DELAY_MS = 450;
-const STORY_MAX_LENGTH = 400;
-
-type OnboardingMockState = {
-  completed: boolean;
-  favoriteMovies: OnboardingMovie[];
-  genres: string[];
-  profileStory: string | null;
-};
-
-let mockState: OnboardingMockState = {
-  completed: false,
-  favoriteMovies: [],
-  genres: [],
-  profileStory: null,
-};
-
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-function inferCurrentStep(state: OnboardingMockState): OnboardingProgress['currentStep'] {
-  if (!state.genres.length) {
-    return 'genres';
-  }
-
-  if (!state.favoriteMovies.length) {
-    return 'favoriteMovies';
-  }
-
-  return 'profileStory';
-}
-
 export const onboardingService = {
   routes: ONBOARDING_ROUTES,
 
   async getProgress(): Promise<OnboardingProgress> {
-    await wait(MOCK_DELAY_MS);
+    if (env.useMockApi) {
+      return mockApi.onboarding.getProgress();
+    }
 
-    return {
-      completed: mockState.completed,
-      currentStep: inferCurrentStep(mockState),
-      favoriteMovies: mockState.favoriteMovies,
-      genres: mockState.genres,
-      profileStory: mockState.profileStory,
-    };
+    try {
+      const response = await api.get<ApiEnvelope<OnboardingProgress>>(ONBOARDING_ROUTES.progress);
+
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao carregar progresso do onboarding. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível carregar seu onboarding no momento.');
+    }
   },
 
   async saveGenres(request: SaveOnboardingGenresRequest): Promise<SaveOnboardingGenresResponse> {
-    await wait(MOCK_DELAY_MS);
-    mockState = {
-      ...mockState,
-      genres: [...request.genres],
-    };
+    if (env.useMockApi) {
+      return mockApi.onboarding.saveGenres(request);
+    }
 
-    return {
-      genres: mockState.genres,
-      nextStep: 'favoriteMovies',
-    };
+    try {
+      const response = await api.put<ApiEnvelope<SaveOnboardingGenresResponse>>(
+        ONBOARDING_ROUTES.genres,
+        request,
+      );
+
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao salvar gêneros. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível salvar seus gêneros no momento.');
+    }
   },
 
   async saveFavoriteMovies(
     request: SaveOnboardingFavoriteMoviesRequest,
   ): Promise<SaveOnboardingFavoriteMoviesResponse> {
-    await wait(MOCK_DELAY_MS);
-    mockState = {
-      ...mockState,
-      favoriteMovies: request.movieIds.map((movieId) => ({
-        id: movieId,
-        title: movieId,
-      })),
-    };
+    if (env.useMockApi) {
+      return mockApi.onboarding.saveFavoriteMovies(request);
+    }
 
-    return {
-      favoriteMovies: mockState.favoriteMovies,
-      nextStep: 'profileStory',
-    };
+    try {
+      const response = await api.put<ApiEnvelope<SaveOnboardingFavoriteMoviesResponse>>(
+        ONBOARDING_ROUTES.favoriteMovies,
+        request,
+      );
+
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao salvar filmes favoritos. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível salvar seus filmes favoritos.');
+    }
   },
 
   async saveProfileStory(
     request: SaveOnboardingProfileStoryRequest,
   ): Promise<SaveOnboardingProfileStoryResponse> {
-    const text = request.text.trim();
-
-    if (text.length > STORY_MAX_LENGTH) {
-      throw new ServiceError({
-        code: 'VALIDATION_ERROR',
-        message: `O texto do perfil pode ter no máximo ${STORY_MAX_LENGTH} caracteres.`,
-      });
+    if (env.useMockApi) {
+      return mockApi.onboarding.saveProfileStory(request);
     }
 
-    await wait(MOCK_DELAY_MS);
-    mockState = {
-      ...mockState,
-      profileStory: text || null,
-    };
+    try {
+      const response = await api.put<ApiEnvelope<SaveOnboardingProfileStoryResponse>>(
+        ONBOARDING_ROUTES.profileStory,
+        request,
+      );
 
-    return {
-      profileStory: text,
-      nextStep: 'complete',
-    };
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao salvar texto do perfil. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível salvar o texto do perfil.');
+    }
   },
 
   async completeOnboarding(): Promise<CompleteOnboardingResponse> {
-    await wait(MOCK_DELAY_MS);
-    mockState = {
-      ...mockState,
-      completed: true,
-    };
+    if (env.useMockApi) {
+      return mockApi.onboarding.completeOnboarding();
+    }
 
-    return {
-      completed: true,
-      completedAt: new Date().toISOString(),
-      nextScreen: 'home',
-    };
-  },
+    try {
+      const response = await api.post<ApiEnvelope<CompleteOnboardingResponse>>(
+        ONBOARDING_ROUTES.complete,
+      );
 
-  clearMockState() {
-    mockState = {
-      completed: false,
-      favoriteMovies: [],
-      genres: [],
-      profileStory: null,
-    };
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao concluir onboarding. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível concluir o onboarding no momento.');
+    }
   },
 };

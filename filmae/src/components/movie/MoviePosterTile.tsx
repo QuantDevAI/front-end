@@ -5,8 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type MoviePosterTileProps = {
-  accentColor: string;
-  gradientColors: readonly [string, string, string, string];
   height: number;
   movie: MovieListItem;
   onPress: () => void;
@@ -15,8 +13,6 @@ type MoviePosterTileProps = {
 };
 
 export function MoviePosterTile({
-  accentColor,
-  gradientColors,
   height,
   movie,
   onPress,
@@ -30,8 +26,8 @@ export function MoviePosterTile({
       onPress={onPress}
       style={({ pressed }) => [styles.container, { height, width }, pressed && styles.pressed]}
     >
-      <LinearGradient colors={gradientColors} style={styles.gradient}>
-        <View style={[styles.accentGlow, { backgroundColor: accentColor }]} />
+      <LinearGradient colors={movie.gradientColors} style={styles.gradient}>
+        <View style={[styles.accentGlow, { backgroundColor: movie.accentColor }]} />
 
         <View style={styles.filmStrip}>
           {Array.from({ length: 7 }, (_, index) => (
@@ -40,7 +36,7 @@ export function MoviePosterTile({
         </View>
 
         <View style={styles.content}>
-          <Text style={[styles.year, { color: accentColor }]}>{movie.year}</Text>
+          <Text style={[styles.year, { color: movie.accentColor }]}>{movie.year}</Text>
           <Text numberOfLines={2} style={styles.title}>
             {movie.title}
           </Text>

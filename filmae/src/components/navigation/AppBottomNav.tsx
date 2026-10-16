@@ -1,10 +1,9 @@
 import { theme } from '@/theme';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-type BottomNavTab = 'discover' | 'home';
+type BottomNavTab = 'collection' | 'discover' | 'home' | 'profile';
 
 type AppBottomNavProps = {
   activeTab: BottomNavTab;
@@ -47,6 +46,22 @@ export function AppBottomNav({ activeTab }: AppBottomNavProps) {
         </Pressable>
 
         <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'collection' }}
+          onPress={() => router.replace('/colecao')}
+          style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}
+        >
+          <MaterialIcons
+            color={activeTab === 'collection' ? theme.colors.cream : theme.colors.creamMuted}
+            name="video-library"
+            size={20}
+          />
+          <Text style={[styles.tabLabel, activeTab === 'collection' && styles.tabLabelActive]}>
+            Coleção
+          </Text>
+        </Pressable>
+
+        <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/filme-do-dia')}
           style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}
@@ -55,19 +70,25 @@ export function AppBottomNav({ activeTab }: AppBottomNavProps) {
         </Pressable>
 
         <View style={styles.tabButton}>
-          <Image
-            accessibilityLabel="Pipoca.i"
-            contentFit="contain"
-            source={require('../../../assets/images/filmae-mascote.png')}
-            style={styles.mascot}
-          />
+          <MaterialIcons color={theme.colors.creamMuted} name="smart-toy" size={20} />
           <Text style={styles.tabLabel}>Pipoca.i</Text>
         </View>
 
-        <View style={styles.tabButton}>
-          <MaterialIcons color={theme.colors.creamMuted} name="person-outline" size={20} />
-          <Text style={styles.tabLabel}>Perfil</Text>
-        </View>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'profile' }}
+          onPress={() => router.replace('/perfil')}
+          style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}
+        >
+          <MaterialIcons
+            color={activeTab === 'profile' ? theme.colors.cream : theme.colors.creamMuted}
+            name={activeTab === 'profile' ? 'person' : 'person-outline'}
+            size={20}
+          />
+          <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>
+            Perfil
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -110,10 +131,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.primary,
     marginHorizontal: theme.spacing.xs,
-  },
-  mascot: {
-    width: 22,
-    height: 22,
   },
   pressed: {
     opacity: theme.opacity.pressed,

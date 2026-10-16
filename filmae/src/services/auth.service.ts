@@ -1,3 +1,8 @@
+import { api } from '@/services/api';
+import { env } from '@/config/env';
+import { mockApi } from '@/services/mock-api';
+import { normalizeServiceError, requireApiData } from '@/services/service-error';
+import type { ApiEnvelope } from '@/types/api';
 import type {
   GoogleLoginRequest,
   GoogleLoginResponse,
@@ -8,7 +13,6 @@ import type {
   RegisterRequest,
   RegisterResponse,
 } from '@/types/auth';
-import { ServiceError } from './service-error';
 
 const AUTH_ROUTES = {
   google: '/auth/google',
@@ -18,139 +22,92 @@ const AUTH_ROUTES = {
   register: '/auth/register',
 } as const;
 
-const MOCK_DELAY_MS = 650;
-const SESSION_DURATION_SECONDS = 900;
-
-type MockSession = {
-  accessToken: string;
-  expiresIn: number;
-  refreshToken: string;
-};
-
-let mockUserIdSeed = 1;
-let _mockLastSession: MockSession | null = null;
-
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-function buildMockSession(): MockSession {
-  const tokenSeed = Date.now().toString(36);
-
-  return {
-    accessToken: `mock-access-${tokenSeed}`,
-    expiresIn: SESSION_DURATION_SECONDS,
-    refreshToken: `mock-refresh-${tokenSeed}`,
-  };
-}
-
 export const authService = {
   routes: AUTH_ROUTES,
 
   async register(request: RegisterRequest): Promise<RegisterResponse> {
-    const email = request.email.trim().toLocaleLowerCase('pt-BR');
-    const name = request.name.trim();
-
-    if (!name || !email || !request.password) {
-      throw new ServiceError({
-        code: 'VALIDATION_ERROR',
-        message: 'Nome, e-mail e senha são obrigatórios para criar conta.',
-      });
+    if (env.useMockApi) {
+      return mockApi.auth.register(request);
     }
 
-    await wait(MOCK_DELAY_MS);
+    try {
+      const response = await api.post<ApiEnvelope<RegisterResponse>>(AUTH_ROUTES.register, request);
 
-    const session = buildMockSession();
-    _mockLastSession = session;
-
-    return {
-      ...session,
-      user: {
-        email,
-        id: mockUserIdSeed++,
-        name,
-        onboardingCompleted: false,
-      },
-    };
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao criar conta. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível criar a conta no momento.');
+    }
   },
 
   async login(request: LoginRequest): Promise<LoginResponse> {
-    const email = request.email.trim().toLocaleLowerCase('pt-BR');
-
-    if (!email || !request.password) {
-      throw new ServiceError({
-        code: 'VALIDATION_ERROR',
-        message: 'E-mail e senha são obrigatórios para entrar.',
-      });
+    if (env.useMockApi) {
+      return mockApi.auth.login(request);
     }
 
-    await wait(MOCK_DELAY_MS);
+    try {
+      const response = await api.post<ApiEnvelope<LoginResponse>>(AUTH_ROUTES.login, request);
 
-    const session = buildMockSession();
-    _mockLastSession = session;
-
-    return {
-      ...session,
-      nextScreen: 'home',
-      user: {
-        email,
-        id: 1,
-        name: 'Usuário Filmaê',
-        onboardingCompleted: true,
-      },
-    };
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao realizar login. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível realizar login no momento.');
+    }
   },
 
   async loginWithGoogle(request: GoogleLoginRequest): Promise<GoogleLoginResponse> {
-    if (!request.idToken.trim()) {
-      throw new ServiceError({
-        code: 'VALIDATION_ERROR',
-        message: 'O idToken do Google é obrigatório.',
-      });
+    if (env.useMockApi) {
+      return mockApi.auth.loginWithGoogle(request);
     }
 
-    await wait(MOCK_DELAY_MS);
+    try {
+      const response = await api.post<ApiEnvelope<GoogleLoginResponse>>(
+        AUTH_ROUTES.google,
+        request,
+      );
 
-    const session = buildMockSession();
-    _mockLastSession = session;
-
-    return {
-      ...session,
-      nextScreen: 'home',
-      user: {
-        email: 'usuario.google@filmae.app',
-        id: 1,
-        name: 'Usuário Google',
-        onboardingCompleted: true,
-      },
-    };
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao autenticar com Google. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível autenticar com Google no momento.');
+    }
   },
 
   async refreshSession(request: RefreshSessionRequest): Promise<RefreshSessionResponse> {
-    if (!request.refreshToken.trim()) {
-      throw new ServiceError({
-        code: 'UNAUTHORIZED',
-        message: 'Não foi possível renovar a sessão sem refresh token.',
-      });
+    if (env.useMockApi) {
+      return mockApi.auth.refreshSession(request);
     }
 
-    await wait(MOCK_DELAY_MS);
+    try {
+      const response = await api.post<ApiEnvelope<RefreshSessionResponse>>(
+        AUTH_ROUTES.refresh,
+        request,
+      );
 
-    const session = buildMockSession();
-    _mockLastSession = session;
-
-    return session;
+      return requireApiData(
+        response.data,
+        'Resposta inválida ao renovar sessão. Tente novamente em instantes.',
+      );
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível renovar a sessão no momento.');
+    }
   },
 
   async logout(): Promise<void> {
-    await wait(250);
-    _mockLastSession = null;
-  },
+    if (env.useMockApi) {
+      return mockApi.auth.logout();
+    }
 
-  // Utilitário apenas para desenvolvimento local, sem impacto em produção.
-  clearMockSession() {
-    _mockLastSession = null;
+    try {
+      await api.post(AUTH_ROUTES.logout);
+    } catch (error: unknown) {
+      throw normalizeServiceError(error, 'Não foi possível encerrar a sessão no momento.');
+    }
   },
 };

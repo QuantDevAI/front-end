@@ -1,6 +1,5 @@
 import { MoviePosterTile } from '@/components/movie/MoviePosterTile';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
-import { getCatalogMovieById } from '@/data/catalog';
 import { homeService } from '@/services/home.service';
 import { theme } from '@/theme';
 import { formatRuntimeMinutes } from '@/utils/movies';
@@ -59,6 +58,18 @@ export default function HomeScreen() {
     });
   }
 
+  function openCollection() {
+    router.push('/colecao');
+  }
+
+  function openNotifications() {
+    router.push('/notificacoes');
+  }
+
+  function openProfile() {
+    router.push('/perfil');
+  }
+
   useEffect(() => {
     const timer = setTimeout(() => {
       void loadHome();
@@ -68,8 +79,6 @@ export default function HomeScreen() {
       clearTimeout(timer);
     };
   }, [loadHome]);
-
-  const dailyMovieCatalog = homeData ? getCatalogMovieById(homeData.dailyMovie.id) : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -92,7 +101,7 @@ export default function HomeScreen() {
               <Text style={styles.retryButtonText}>Tentar novamente</Text>
             </Pressable>
           </View>
-        ) : homeData && dailyMovieCatalog ? (
+        ) : homeData ? (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -104,37 +113,28 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.headerActions}>
-                <View style={styles.notificationBadge}>
+                <Pressable
+                  accessibilityLabel="Abrir notificações"
+                  accessibilityRole="button"
+                  onPress={openNotifications}
+                  style={({ pressed }) => [styles.notificationBadge, pressed && styles.pressed]}
+                >
                   <MaterialIcons
                     color={theme.colors.creamMuted}
                     name="notifications-none"
                     size={21}
                   />
                   {homeData.unreadNotifications > 0 ? <View style={styles.unreadDot} /> : null}
-                </View>
+                </Pressable>
 
-                <View style={styles.avatarButton}>
+                <Pressable
+                  accessibilityLabel="Abrir perfil"
+                  accessibilityRole="button"
+                  onPress={openProfile}
+                  style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}
+                >
                   <Text style={styles.avatarText}>{homeData.user.name.charAt(0)}</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.streakCard}>
-              <View style={styles.streakIconContainer}>
-                <Text style={styles.streakIcon}>🔥</Text>
-              </View>
-
-              <View style={styles.streakContent}>
-                <View style={styles.streakHeader}>
-                  <Text style={styles.streakTitle}>7 dias de sequência</Text>
-                  <Text style={styles.streakLevel}>Nv. 4</Text>
-                </View>
-
-                <View style={styles.progressTrack}>
-                  <View style={styles.progressFill} />
-                </View>
-
-                <Text style={styles.streakSubtitle}>320/500 Pipocas • avatar novo no nível 5</Text>
+                </Pressable>
               </View>
             </View>
 
@@ -156,8 +156,6 @@ export default function HomeScreen() {
                 style={({ pressed }) => [styles.dailyCard, pressed && styles.pressed]}
               >
                 <MoviePosterTile
-                  accentColor={dailyMovieCatalog.accentColor}
-                  gradientColors={dailyMovieCatalog.gradientColors}
                   height={140}
                   movie={homeData.dailyMovie}
                   onPress={() => openMovieDetails(homeData.dailyMovie.id)}
@@ -200,31 +198,26 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.posterRow}
               >
-                {homeData.recommendations.map((movie) => {
-                  const catalogMovie = getCatalogMovieById(movie.id);
-
-                  if (!catalogMovie) {
-                    return null;
-                  }
-
-                  return (
-                    <MoviePosterTile
-                      key={movie.id}
-                      accentColor={catalogMovie.accentColor}
-                      gradientColors={catalogMovie.gradientColors}
-                      height={posterSize.height}
-                      movie={movie}
-                      onPress={() => openMovieDetails(movie.id)}
-                      showCompatibility
-                      width={posterSize.width}
-                    />
-                  );
-                })}
+                {homeData.recommendations.map((movie) => (
+                  <MoviePosterTile
+                    key={movie.id}
+                    height={posterSize.height}
+                    movie={movie}
+                    onPress={() => openMovieDetails(movie.id)}
+                    showCompatibility
+                    width={posterSize.width}
+                  />
+                ))}
               </ScrollView>
             </View>
 
             <View style={styles.section}>
-              <View style={styles.collectionCard}>
+              <Pressable
+                accessibilityLabel="Abrir minha coleção"
+                accessibilityRole="button"
+                onPress={openCollection}
+                style={({ pressed }) => [styles.collectionCard, pressed && styles.pressed]}
+              >
                 <MaterialIcons color={theme.colors.creamMuted} name="local-movies" size={28} />
                 <View style={styles.collectionText}>
                   <Text style={styles.collectionTitle}>Minha coleção</Text>
@@ -234,7 +227,7 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <MaterialIcons color={theme.colors.creamMuted} name="chevron-right" size={20} />
-              </View>
+              </Pressable>
             </View>
           </ScrollView>
         ) : (
@@ -346,65 +339,6 @@ const styles = StyleSheet.create({
     color: '#72090E',
     fontSize: 16,
     fontWeight: theme.fontWeights.bold,
-  },
-  streakCard: {
-    marginTop: theme.spacing.lg,
-    marginHorizontal: theme.spacing.xxl,
-    borderRadius: theme.radii.xl,
-    padding: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,244,220,0.10)',
-    backgroundColor: '#211817',
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    alignItems: 'center',
-  },
-  streakIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(229,9,20,0.16)',
-  },
-  streakIcon: {
-    fontSize: 20,
-  },
-  streakContent: {
-    flex: 1,
-  },
-  streakHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  streakTitle: {
-    color: theme.colors.text,
-    fontSize: theme.fontSizes.body,
-    fontWeight: theme.fontWeights.semiBold,
-  },
-  streakLevel: {
-    color: theme.colors.cream,
-    fontSize: theme.fontSizes.small,
-    fontWeight: theme.fontWeights.semiBold,
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: theme.radii.round,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    width: '64%',
-    height: '100%',
-    borderRadius: theme.radii.round,
-    backgroundColor: theme.colors.primary,
-  },
-  streakSubtitle: {
-    marginTop: 6,
-    color: '#8D817B',
-    fontSize: theme.fontSizes.caption,
   },
   section: {
     marginTop: theme.spacing.xl,

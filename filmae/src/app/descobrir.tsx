@@ -1,6 +1,5 @@
 import { MoviePosterTile } from '@/components/movie/MoviePosterTile';
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
-import { getCatalogMovieById } from '@/data/catalog';
 import { moviesService } from '@/services/movies.service';
 import { theme } from '@/theme';
 import type { GenreCatalogItem, MovieListItem } from '@/types/movies';
@@ -168,26 +167,16 @@ export default function DiscoverScreen() {
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.posterRow}
                     >
-                      {highlightedMovies.map((movie) => {
-                        const catalogMovie = getCatalogMovieById(movie.id);
-
-                        if (!catalogMovie) {
-                          return null;
-                        }
-
-                        return (
-                          <MoviePosterTile
-                            key={movie.id}
-                            accentColor={catalogMovie.accentColor}
-                            gradientColors={catalogMovie.gradientColors}
-                            height={posterSize.height}
-                            movie={movie}
-                            onPress={() => openMovieDetails(movie.id)}
-                            showCompatibility
-                            width={posterSize.width}
-                          />
-                        );
-                      })}
+                      {highlightedMovies.map((movie) => (
+                        <MoviePosterTile
+                          key={movie.id}
+                          height={posterSize.height}
+                          movie={movie}
+                          onPress={() => openMovieDetails(movie.id)}
+                          showCompatibility
+                          width={posterSize.width}
+                        />
+                      ))}
                     </ScrollView>
                   </View>
 
@@ -205,26 +194,16 @@ export default function DiscoverScreen() {
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Todos os filmes</Text>
                     <View style={styles.grid}>
-                      {movies.map((movie) => {
-                        const catalogMovie = getCatalogMovieById(movie.id);
-
-                        if (!catalogMovie) {
-                          return null;
-                        }
-
-                        return (
-                          <MoviePosterTile
-                            key={movie.id}
-                            accentColor={catalogMovie.accentColor}
-                            gradientColors={catalogMovie.gradientColors}
-                            height={posterSize.height}
-                            movie={movie}
-                            onPress={() => openMovieDetails(movie.id)}
-                            showCompatibility
-                            width={posterSize.width}
-                          />
-                        );
-                      })}
+                      {movies.map((movie) => (
+                        <MoviePosterTile
+                          key={movie.id}
+                          height={posterSize.height}
+                          movie={movie}
+                          onPress={() => openMovieDetails(movie.id)}
+                          showCompatibility
+                          width={posterSize.width}
+                        />
+                      ))}
                     </View>
                   </View>
                 </>
@@ -235,45 +214,35 @@ export default function DiscoverScreen() {
                   </Text>
 
                   <View style={styles.resultList}>
-                    {movies.map((movie) => {
-                      const catalogMovie = getCatalogMovieById(movie.id);
-
-                      if (!catalogMovie) {
-                        return null;
-                      }
-
-                      return (
-                        <Pressable
-                          key={movie.id}
-                          accessibilityRole="button"
+                    {movies.map((movie) => (
+                      <Pressable
+                        key={movie.id}
+                        accessibilityRole="button"
+                        onPress={() => openMovieDetails(movie.id)}
+                        style={({ pressed }) => [styles.resultItem, pressed && styles.pressed]}
+                      >
+                        <MoviePosterTile
+                          height={96}
+                          movie={movie}
                           onPress={() => openMovieDetails(movie.id)}
-                          style={({ pressed }) => [styles.resultItem, pressed && styles.pressed]}
-                        >
-                          <MoviePosterTile
-                            accentColor={catalogMovie.accentColor}
-                            gradientColors={catalogMovie.gradientColors}
-                            height={96}
-                            movie={movie}
-                            onPress={() => openMovieDetails(movie.id)}
-                            width={64}
-                          />
+                          width={64}
+                        />
 
-                          <View style={styles.resultText}>
-                            <Text style={styles.resultTitle}>{movie.title}</Text>
-                            <Text style={styles.resultMeta}>
-                              {movie.year} • {catalogMovie.director}
-                            </Text>
-                            <Text style={styles.resultMeta}>
-                              {formatRuntimeMinutes(movie.runtimeMinutes)} • IMDb{' '}
-                              {movie.imdb.rating.toFixed(1)}
-                            </Text>
-                            <Text style={styles.resultCompatibility}>
-                              {movie.compatibilityScore}% para você
-                            </Text>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
+                        <View style={styles.resultText}>
+                          <Text style={styles.resultTitle}>{movie.title}</Text>
+                          <Text style={styles.resultMeta}>
+                            {movie.year} • {movie.director}
+                          </Text>
+                          <Text style={styles.resultMeta}>
+                            {formatRuntimeMinutes(movie.runtimeMinutes)} • IMDb{' '}
+                            {movie.imdb.rating.toFixed(1)}
+                          </Text>
+                          <Text style={styles.resultCompatibility}>
+                            {movie.compatibilityScore}% para você
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
                   </View>
                 </View>
               )}
