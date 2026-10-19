@@ -1,3 +1,8 @@
+import {
+  setPendingAuthLoadingTask,
+  type AuthLoadingTargetRoute,
+} from '@/services/auth-loading.service';
+import { authService } from '@/services/auth.service';
 import { theme } from '@/theme';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -25,24 +30,66 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function resolveNextRoute(nextScreen: 'home' | 'onboarding'): AuthLoadingTargetRoute {
+    if (nextScreen === 'home') {
+      return '/home';
+    }
+
+    return '/onboarding';
+  }
 
   function handleVoltar() {
     router.back();
   }
 
   function handleLogin() {
-    // A integração será adicionada quando o endpoint real for informado.
-    console.warn('Autenticação por e-mail ainda não implementada.', {
-      emailPreenchido: Boolean(email),
+    if (isSubmitting) {
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLocaleLowerCase('pt-BR');
+
+    if (!normalizedEmail || !senha) {
+      setErrorMessage('Preencha e-mail e senha para continuar.');
+      return;
+    }
+
+    if (!normalizedEmail.includes('@')) {
+      setErrorMessage('Digite um e-mail válido.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    setPendingAuthLoadingTask({
+      mode: 'login',
+      run: async () => {
+        const result = await authService.login({
+          email: normalizedEmail,
+          password: senha,
+        });
+
+        return resolveNextRoute(result.nextScreen);
+      },
     });
+
+    router.replace('/auth-loading');
   }
 
   function handleEsqueciSenha() {
-    console.warn('Recuperação de senha ainda não implementada.');
+    setErrorMessage('A recuperação de senha ainda não está disponível.');
   }
 
   function handleGoogle() {
-    console.warn('Autenticação com Google ainda não implementada.');
+    if (isSubmitting) {
+      return;
+    }
+
+    setErrorMessage('Login com Google ainda não está disponível nesta versão. Use e-mail e senha.');
   }
 
   function handleCadastro() {
@@ -123,6 +170,7 @@ export default function LoginScreen() {
                     accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                     accessibilityRole="button"
                     style={styles.eyeButton}
+                    disabled={isSubmitting}
                     onPress={() => setMostrarSenha((valorAtual) => !valorAtual)}
                   >
                     <MaterialIcons
@@ -137,17 +185,35 @@ export default function LoginScreen() {
               <Pressable
                 accessibilityRole="button"
                 style={styles.forgotButton}
+                disabled={isSubmitting}
                 onPress={handleEsqueciSenha}
               >
                 <Text style={styles.forgotText}>Esqueci minha senha</Text>
               </Pressable>
 
+              {errorMessage ? (
+                <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+                  {errorMessage}
+                </Text>
+              ) : null}
+
               <Pressable
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.loginButton, pressed && styles.buttonPressed]}
+                accessibilityState={{
+                  busy: isSubmitting,
+                  disabled: isSubmitting,
+                }}
+                disabled={isSubmitting}
+                style={({ pressed }) => [
+                  styles.loginButton,
+                  isSubmitting && styles.loginButtonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
                 onPress={handleLogin}
               >
-                <Text style={styles.loginButtonText}>Entrar</Text>
+                <Text style={styles.loginButtonText}>
+                  {isSubmitting ? 'Entrando...' : 'Entrar'}
+                </Text>
               </Pressable>
 
               <View style={styles.dividerContainer}>
@@ -159,8 +225,14 @@ export default function LoginScreen() {
               <Pressable
                 accessibilityLabel="Fazer login com Google"
                 accessibilityRole="button"
+                accessibilityState={{
+                  busy: isSubmitting,
+                  disabled: isSubmitting,
+                }}
+                disabled={isSubmitting}
                 style={({ pressed }) => [
                   styles.googleButton,
+                  isSubmitting && styles.googleButtonDisabled,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={handleGoogle}
@@ -277,6 +349,12 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSizes.small,
     fontWeight: theme.fontWeights.semiBold,
   },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: theme.fontSizes.small,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
   loginButton: {
     height: theme.sizes.control,
     borderRadius: theme.radii.sm,
@@ -288,6 +366,9 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.fontSizes.body,
     fontWeight: theme.fontWeights.bold,
+  },
+  loginButtonDisabled: {
+    opacity: theme.opacity.pressedSoft,
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -308,6 +389,9 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  googleButtonDisabled: {
+    opacity: theme.opacity.pressedSoft,
   },
   googleButtonImage: {
     width: 225,

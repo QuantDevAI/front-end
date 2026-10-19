@@ -34,7 +34,7 @@ export const GENRES: GenreOption[] = [
 
 export const MOVIES: MovieOption[] = [
   {
-    id: '1',
+    id: 'tt0816692',
     title: 'Interestelar',
     year: 2014,
     imdb: 8.7,
@@ -42,7 +42,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#4A90E2',
   },
   {
-    id: '2',
+    id: 'tt15398776',
     title: 'Oppenheimer',
     year: 2023,
     imdb: 8.9,
@@ -50,7 +50,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#E85C00',
   },
   {
-    id: '3',
+    id: 'tt1160419',
     title: 'Duna',
     year: 2021,
     imdb: 8.0,
@@ -58,7 +58,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#C8A000',
   },
   {
-    id: '4',
+    id: 'tt0468569',
     title: 'O Cavaleiro das Trevas',
     year: 2008,
     imdb: 9.0,
@@ -66,7 +66,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#7C3AED',
   },
   {
-    id: '5',
+    id: 'tt1375666',
     title: 'A Origem',
     year: 2010,
     imdb: 8.8,
@@ -74,7 +74,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#00AAFF',
   },
   {
-    id: '6',
+    id: 'tt1856101',
     title: 'Blade Runner 2049',
     year: 2017,
     imdb: 8.0,
@@ -82,7 +82,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#FF8C00',
   },
   {
-    id: '7',
+    id: 'tt6751668',
     title: 'Parasita',
     year: 2019,
     imdb: 8.5,
@@ -90,7 +90,7 @@ export const MOVIES: MovieOption[] = [
     accentColor: '#00CC44',
   },
   {
-    id: '8',
+    id: 'tt0137523',
     title: 'Clube da Luta',
     year: 1999,
     imdb: 8.8,

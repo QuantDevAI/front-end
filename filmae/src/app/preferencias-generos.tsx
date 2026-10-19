@@ -83,10 +83,7 @@ export default function GenrePreferencesScreen() {
         <Text style={styles.subtitle}>Selecione pelo menos 3 gêneros</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.genreContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.genreContent} showsVerticalScrollIndicator={false}>
         <View style={styles.genreList}>
           {GENRES.map((genre) => {
             const selected = selectedIds.has(genre.id);
