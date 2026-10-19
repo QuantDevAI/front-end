@@ -61,29 +61,27 @@ export default function DashboardScreen() {
   }, [loadDashboard]);
 
   const overviewCards = useMemo(() => {
-    if (!dashboardData) {
-      return [];
-    }
-
     return [
       {
         label: 'Filmes assistidos',
-        value: String(dashboardData.kpis.watchedCount),
+        value: String(dashboardData?.kpis.watchedCount ?? 0),
       },
       {
         label: 'Filmes avaliados',
-        value: String(dashboardData.kpis.ratedCount),
+        value: String(dashboardData?.kpis.ratedCount ?? 0),
       },
       {
         label: 'Favoritos',
-        value: String(dashboardData.kpis.favoriteCount),
+        value: String(dashboardData?.kpis.favoriteCount ?? 0),
       },
       {
         label: 'Na watchlist',
-        value: String(dashboardData.kpis.watchlistCount),
+        value: String(dashboardData?.kpis.watchlistCount ?? 0),
       },
     ];
   }, [dashboardData]);
+  const topGenres = dashboardData?.topGenres ?? [];
+  const historyPreview = dashboardData?.historyPreview ?? [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -108,24 +106,26 @@ export default function DashboardScreen() {
             <ActivityIndicator color={theme.colors.primary} />
             <Text style={styles.stateText}>Carregando dashboard...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadDashboard()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
-        ) : dashboardData ? (
+        ) : (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadDashboard()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Visão geral</Text>
               <View style={styles.kpiGrid}>
@@ -137,15 +137,18 @@ export default function DashboardScreen() {
                 ))}
               </View>
               <Text style={styles.helpText}>
-                Tempo assistido: {formatMinutesAsHours(dashboardData.kpis.totalMinutesWatched)}
+                Tempo assistido:{' '}
+                {formatMinutesAsHours(dashboardData?.kpis.totalMinutesWatched ?? 0)}
               </Text>
-              <Text style={styles.helpText}>Reassistir: {dashboardData.kpis.rewatchCount}</Text>
+              <Text style={styles.helpText}>
+                Reassistir: {dashboardData?.kpis.rewatchCount ?? 0}
+              </Text>
             </View>
 
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Gêneros mais assistidos</Text>
-              {dashboardData.topGenres.length ? (
-                dashboardData.topGenres.map((genre) => (
+              {topGenres.length ? (
+                topGenres.map((genre) => (
                   <View key={genre.genre} style={styles.genreRow}>
                     <Text style={styles.genreName}>{genre.genre}</Text>
                     <Text style={styles.genreCount}>{genre.count}</Text>
@@ -168,8 +171,8 @@ export default function DashboardScreen() {
                 </Pressable>
               </View>
 
-              {dashboardData.historyPreview.length ? (
-                dashboardData.historyPreview.map((entry, index) => (
+              {historyPreview.length ? (
+                historyPreview.map((entry, index) => (
                   <Pressable
                     key={`${entry.movieId}-${entry.watchedAt}-${index}`}
                     accessibilityRole="button"
@@ -199,10 +202,6 @@ export default function DashboardScreen() {
               )}
             </View>
           </ScrollView>
-        ) : (
-          <View style={styles.centerState}>
-            <Text style={styles.stateText}>Sem dados para exibir no dashboard.</Text>
-          </View>
         )}
 
         <AppBottomNav activeTab="profile" />
@@ -280,6 +279,20 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.fontSizes.body,
     fontWeight: theme.fontWeights.semiBold,
+  },
+  warningBanner: {
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   scrollContent: {
     paddingHorizontal: theme.spacing.xxl,

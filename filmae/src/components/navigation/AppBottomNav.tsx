@@ -3,7 +3,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-type BottomNavTab = 'collection' | 'discover' | 'home' | 'profile';
+type BottomNavTab = 'add-movie' | 'collection' | 'discover' | 'home' | 'pipocai' | 'profile';
 
 type AppBottomNavProps = {
   activeTab: BottomNavTab;
@@ -46,33 +46,34 @@ export function AppBottomNav({ activeTab }: AppBottomNavProps) {
         </Pressable>
 
         <Pressable
+          accessibilityLabel="Adicionar filme assistido"
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'collection' }}
-          onPress={() => router.replace('/colecao')}
-          style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}
-        >
-          <MaterialIcons
-            color={activeTab === 'collection' ? theme.colors.cream : theme.colors.creamMuted}
-            name="video-library"
-            size={20}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'collection' && styles.tabLabelActive]}>
-            Coleção
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/filme-do-dia')}
-          style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}
+          accessibilityState={{ selected: activeTab === 'add-movie' }}
+          onPress={() => router.replace('/adicionar-filme')}
+          style={({ pressed }) => [
+            styles.centerButton,
+            activeTab === 'add-movie' && styles.centerButtonActive,
+            pressed && styles.pressed,
+          ]}
         >
           <MaterialIcons color={theme.colors.text} name="add" size={22} />
         </Pressable>
 
-        <View style={styles.tabButton}>
-          <MaterialIcons color={theme.colors.creamMuted} name="smart-toy" size={20} />
-          <Text style={styles.tabLabel}>Pipoca.i</Text>
-        </View>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'pipocai' }}
+          onPress={() => router.replace('/pipocai')}
+          style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}
+        >
+          <MaterialIcons
+            color={activeTab === 'pipocai' ? theme.colors.cream : theme.colors.creamMuted}
+            name="smart-toy"
+            size={20}
+          />
+          <Text style={[styles.tabLabel, activeTab === 'pipocai' && styles.tabLabelActive]}>
+            Pipoca.i
+          </Text>
+        </Pressable>
 
         <Pressable
           accessibilityRole="tab"
@@ -131,6 +132,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.primary,
     marginHorizontal: theme.spacing.xs,
+  },
+  centerButtonActive: {
+    transform: [{ scale: 1.04 }],
   },
   pressed: {
     opacity: theme.opacity.pressed,

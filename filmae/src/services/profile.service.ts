@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type {
@@ -21,10 +19,6 @@ export const profileService = {
   routes: PROFILE_ROUTES,
 
   async getMe(): Promise<UserProfilePayload> {
-    if (env.useMockApi) {
-      return mockApi.profile.getMe();
-    }
-
     try {
       const [profileResponse, preferencesResponse] = await Promise.all([
         api.get<ApiEnvelope<UserProfilePayload['user']>>(PROFILE_ROUTES.me),
@@ -47,10 +41,6 @@ export const profileService = {
   },
 
   async updateMe(request: UpdateUserProfileRequest): Promise<UserProfilePayload> {
-    if (env.useMockApi) {
-      return mockApi.profile.updateMe(request);
-    }
-
     try {
       const response = await api.patch<ApiEnvelope<UserProfilePayload['user']>>(
         PROFILE_ROUTES.patchMe,

@@ -94,19 +94,6 @@ export default function DailyMovieScreen() {
             <ActivityIndicator color={theme.colors.primary} size="large" />
             <Text style={styles.stateText}>Analisando seu filme do dia...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadDailyMovie()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
         ) : dailyMovie ? (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -223,7 +210,16 @@ export default function DailyMovieScreen() {
           </ScrollView>
         ) : (
           <View style={styles.centerState}>
-            <Text style={styles.stateText}>Não há filme do dia disponível.</Text>
+            <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+              {errorMessage ?? 'Não há filme do dia disponível.'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void loadDailyMovie()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.retryButtonText}>Atualizar</Text>
+            </Pressable>
           </View>
         )}
       </View>

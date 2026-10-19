@@ -195,19 +195,6 @@ export default function MovieDetailScreen() {
             <ActivityIndicator color={theme.colors.primary} size="large" />
             <Text style={styles.stateText}>Carregando detalhes...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadMovie()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
         ) : movie ? (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -443,7 +430,16 @@ export default function MovieDetailScreen() {
           </ScrollView>
         ) : (
           <View style={styles.centerState}>
-            <Text style={styles.stateText}>Filme indisponível.</Text>
+            <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+              {errorMessage ?? 'Filme indisponível.'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void loadMovie()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.retryButtonText}>Atualizar</Text>
+            </Pressable>
           </View>
         )}
 

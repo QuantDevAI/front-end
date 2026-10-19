@@ -24,6 +24,7 @@ export default function HomeScreen() {
   const [homeData, setHomeData] = useState<Awaited<ReturnType<typeof homeService.getHome>> | null>(
     null,
   );
+  const userName = homeData?.user.name?.trim() || 'Cinéfilo';
 
   const posterSize = useMemo(() => {
     const horizontalPadding = theme.spacing.xxl * 2;
@@ -43,7 +44,10 @@ export default function HomeScreen() {
       const result = await homeService.getHome();
       setHomeData(result);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Não foi possível carregar a Home.';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível carregar os dados da Home agora.';
       setErrorMessage(message);
       setHomeData(null);
     } finally {
@@ -88,27 +92,29 @@ export default function HomeScreen() {
             <ActivityIndicator color={theme.colors.primary} size="large" />
             <Text style={styles.stateText}>Montando sua sessão de hoje...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadHome()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
-        ) : homeData ? (
+        ) : (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadHome()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <View style={styles.header}>
               <View>
-                <Text style={styles.greeting}>Boa noite, {homeData.user.name} 👋</Text>
+                <Text style={styles.greeting}>Boa noite, {userName} 👋</Text>
                 <Text style={styles.headerTitle}>Qual é a sessão de hoje?</Text>
               </View>
 
@@ -124,7 +130,9 @@ export default function HomeScreen() {
                     name="notifications-none"
                     size={21}
                   />
-                  {homeData.unreadNotifications > 0 ? <View style={styles.unreadDot} /> : null}
+                  {(homeData?.unreadNotifications ?? 0) > 0 ? (
+                    <View style={styles.unreadDot} />
+                  ) : null}
                 </Pressable>
 
                 <Pressable
@@ -133,7 +141,7 @@ export default function HomeScreen() {
                   onPress={openProfile}
                   style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}
                 >
-                  <Text style={styles.avatarText}>{homeData.user.name.charAt(0)}</Text>
+                  <Text style={styles.avatarText}>{userName.charAt(0)}</Text>
                 </Pressable>
               </View>
             </View>
@@ -150,30 +158,39 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => openMovieDetails(homeData.dailyMovie.id)}
-                style={({ pressed }) => [styles.dailyCard, pressed && styles.pressed]}
-              >
-                <MoviePosterTile
-                  height={140}
-                  movie={homeData.dailyMovie}
+              {homeData?.dailyMovie ? (
+                <Pressable
+                  accessibilityRole="button"
                   onPress={() => openMovieDetails(homeData.dailyMovie.id)}
-                  width={95}
-                />
+                  style={({ pressed }) => [styles.dailyCard, pressed && styles.pressed]}
+                >
+                  <MoviePosterTile
+                    height={140}
+                    movie={homeData.dailyMovie}
+                    onPress={() => openMovieDetails(homeData.dailyMovie.id)}
+                    width={95}
+                  />
 
-                <View style={styles.dailyTextContent}>
-                  <Text style={styles.compatibilityBadge}>
-                    {homeData.dailyMovie.compatibilityScore}% a sua cara
+                  <View style={styles.dailyTextContent}>
+                    <Text style={styles.compatibilityBadge}>
+                      {homeData.dailyMovie.compatibilityScore}% a sua cara
+                    </Text>
+                    <Text style={styles.dailyTitle}>{homeData.dailyMovie.title}</Text>
+                    <Text style={styles.dailyMeta}>
+                      {homeData.dailyMovie.year} •{' '}
+                      {formatRuntimeMinutes(homeData.dailyMovie.runtimeMinutes)}
+                    </Text>
+                    <Text style={styles.dailyReason}>{homeData.dailyMovie.reason}</Text>
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.unavailableCard}>
+                  <Text style={styles.unavailableTitle}>Filme do dia indisponível</Text>
+                  <Text style={styles.unavailableText}>
+                    Não recebemos recomendação agora. Tente novamente em instantes.
                   </Text>
-                  <Text style={styles.dailyTitle}>{homeData.dailyMovie.title}</Text>
-                  <Text style={styles.dailyMeta}>
-                    {homeData.dailyMovie.year} •{' '}
-                    {formatRuntimeMinutes(homeData.dailyMovie.runtimeMinutes)}
-                  </Text>
-                  <Text style={styles.dailyReason}>{homeData.dailyMovie.reason}</Text>
                 </View>
-              </Pressable>
+              )}
             </View>
 
             <View style={styles.section}>
@@ -198,16 +215,24 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.posterRow}
               >
-                {homeData.recommendations.map((movie) => (
-                  <MoviePosterTile
-                    key={movie.id}
-                    height={posterSize.height}
-                    movie={movie}
-                    onPress={() => openMovieDetails(movie.id)}
-                    showCompatibility
-                    width={posterSize.width}
-                  />
-                ))}
+                {homeData?.recommendations.length ? (
+                  homeData.recommendations.map((movie) => (
+                    <MoviePosterTile
+                      key={movie.id}
+                      height={posterSize.height}
+                      movie={movie}
+                      onPress={() => openMovieDetails(movie.id)}
+                      showCompatibility
+                      width={posterSize.width}
+                    />
+                  ))
+                ) : (
+                  <View style={styles.unavailableInlineCard}>
+                    <Text style={styles.unavailableText}>
+                      Recomendações indisponíveis no momento.
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
             </View>
 
@@ -222,18 +247,14 @@ export default function HomeScreen() {
                 <View style={styles.collectionText}>
                   <Text style={styles.collectionTitle}>Minha coleção</Text>
                   <Text style={styles.collectionSubtitle}>
-                    Quero assistir {homeData.collectionSummary.watchlist} • Assistidos{' '}
-                    {homeData.collectionSummary.watched}
+                    Quero assistir {homeData?.collectionSummary.watchlist ?? 0} • Assistidos{' '}
+                    {homeData?.collectionSummary.watched ?? 0}
                   </Text>
                 </View>
                 <MaterialIcons color={theme.colors.creamMuted} name="chevron-right" size={20} />
               </Pressable>
             </View>
           </ScrollView>
-        ) : (
-          <View style={styles.centerState}>
-            <Text style={styles.stateText}>Sem dados para exibir na Home.</Text>
-          </View>
         )}
 
         <AppBottomNav activeTab="home" />
@@ -266,13 +287,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     textAlign: 'center',
   },
-  errorText: {
-    color: theme.colors.danger,
-    fontSize: theme.fontSizes.body,
-    textAlign: 'center',
-  },
   retryButton: {
-    marginTop: theme.spacing.lg,
     paddingHorizontal: theme.spacing.lg,
     height: 44,
     borderRadius: theme.radii.md,
@@ -437,6 +452,50 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: '#8D817B',
     fontSize: theme.fontSizes.small,
+  },
+  warningBanner: {
+    marginTop: theme.spacing.lg,
+    marginHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+  },
+  unavailableCard: {
+    marginHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.warmBorder,
+    backgroundColor: theme.colors.warmSurface,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.xs,
+  },
+  unavailableInlineCard: {
+    minWidth: 220,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.warmBorder,
+    backgroundColor: theme.colors.warmSurface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    justifyContent: 'center',
+  },
+  unavailableTitle: {
+    color: theme.colors.text,
+    fontSize: theme.fontSizes.body,
+    fontWeight: theme.fontWeights.semiBold,
+  },
+  unavailableText: {
+    color: theme.colors.creamMuted,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
   },
   pressed: {
     opacity: theme.opacity.pressed,

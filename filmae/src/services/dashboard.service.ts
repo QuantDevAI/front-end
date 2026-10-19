@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type { DashboardPayload, WatchHistoryEntry } from '@/types/dashboard';
@@ -13,10 +11,6 @@ export const dashboardService = {
   routes: DASHBOARD_ROUTES,
 
   async getDashboard(): Promise<DashboardPayload> {
-    if (env.useMockApi) {
-      return mockApi.dashboard.getDashboard();
-    }
-
     try {
       const response = await api.get<ApiEnvelope<DashboardPayload>>(DASHBOARD_ROUTES.dashboard);
 
@@ -30,10 +24,6 @@ export const dashboardService = {
   },
 
   async getWatchHistory(): Promise<WatchHistoryEntry[]> {
-    if (env.useMockApi) {
-      return mockApi.dashboard.getWatchHistory();
-    }
-
     const dashboard = await this.getDashboard();
     return dashboard.historyPreview;
   },

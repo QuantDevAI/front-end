@@ -69,24 +69,26 @@ export default function HistoryScreen() {
             <ActivityIndicator color={theme.colors.primary} />
             <Text style={styles.stateText}>Carregando histórico...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadHistory()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
         ) : historyData && historyData.length > 0 ? (
           <ScrollView
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           >
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadHistory()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             {historyData.map((entry, index) => (
               <Pressable
                 key={`${entry.movieId}-${entry.watchedAt}-${index}`}
@@ -113,6 +115,21 @@ export default function HistoryScreen() {
           </ScrollView>
         ) : (
           <View style={styles.centerState}>
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadHistory()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <MaterialIcons color={theme.colors.creamMuted} name="history" size={28} />
             <Text style={styles.stateText}>Nenhum filme assistido no histórico.</Text>
             <Pressable
@@ -197,6 +214,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.fontSizes.body,
     fontWeight: theme.fontWeights.semiBold,
+  },
+  warningBanner: {
+    width: '100%',
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   listContainer: {
     paddingHorizontal: theme.spacing.xxl,

@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type { HomePayload } from '@/types/home';
@@ -16,10 +14,6 @@ export const homeService = {
   routes: HOME_ROUTES,
 
   async getHome(): Promise<HomePayload> {
-    if (env.useMockApi) {
-      return mockApi.home.getHome();
-    }
-
     try {
       const response = await api.get<ApiEnvelope<HomePayload>>(HOME_ROUTES.home);
 

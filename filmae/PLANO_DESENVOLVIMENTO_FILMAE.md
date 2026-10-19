@@ -218,12 +218,12 @@ Concluir a implementação do app Filmaê no padrão do repositório atual (Expo
 
 ## Etapa 5 — Extras desacoplados (fora do core imediato)
 
-**Status:** PENDENTE
+**Status:** EM ANDAMENTO
 
 **Módulos**
 
 - Pipocai chat/memória
-- Galeria de avatares
+- Galeria de avatares (postergada, desacoplada de foguinhos no escopo atual)
 
 **Nota de escopo**
 
@@ -433,6 +433,47 @@ Concluir a implementação do app Filmaê no padrão do repositório atual (Expo
 - **Riscos/pendências para próxima etapa:**
   - Validar visualmente todas as telas com backend desligado e fluxo completo (login, onboarding, home, detalhe, coleção, perfil, dashboard, histórico e notificações).
   - Substituir progressivamente os mocks pelos endpoints reais conforme contrato do backend for fechado.
+
+#### 2026-10-16 — Etapa 5 (parcial) com foco em Pipocai e registro de filmes
+
+- **Etapa:** Etapa 5 — Extras desacoplados (primeira entrega)
+- **Período:** 2026-10-16
+- **Status final:** Ajustes entregues e validados tecnicamente (aguardando aprovação)
+- **Resumo técnico:**
+  - Implementadas telas de Pipocai (`/pipocai`) e Memória do Pipocai (`/pipocai-memoria`) com fluxo completo para teste visual local.
+  - Implementadas telas de adicionar filme assistido (`/adicionar-filme`) e avaliar filme (`/avaliar-filme/[id]`) conectadas aos serviços de catálogo, coleção e avaliações.
+  - Navegação inferior atualizada para refletir o protótipo: botão central para registrar filme e aba Pipocai interativa.
+  - Adicionada camada de domínio `pipocai.service.ts` com contrato desacoplado e suporte ao modo mock local.
+  - Extendida a camada `mock-api` com estado e operações de conversa/memória do Pipocai.
+- **Arquivos criados/alterados/removidos:**
+  - Criados: `src/app/pipocai.tsx`, `src/app/pipocai-memoria.tsx`, `src/app/adicionar-filme.tsx`, `src/app/avaliar-filme/[id].tsx`, `src/services/pipocai.service.ts`, `src/types/pipocai.ts`.
+  - Alterados: `src/components/navigation/AppBottomNav.tsx`, `src/app/perfil.tsx`, `src/services/mock-api.ts`.
+- **Validação executada:**
+  - `npm run format` ✅
+  - `npm run check` ✅
+- **Riscos/pendências para próxima etapa:**
+  - Definir contrato de backend para Pipocai (chat/memória) antes de trocar a implementação mock por API real.
+  - Planejar galeria de avatares sem acoplamento ao sistema de foguinhos, mantendo escopo desacoplado.
+
+#### 2026-10-16 — Consolidação sem mock e UX navegável com API indisponível
+
+- **Etapa:** Ajuste transversal pós-feedback (produção real sem mock)
+- **Período:** 2026-10-16
+- **Status final:** Ajustes entregues e validados tecnicamente (aguardando aprovação)
+- **Resumo técnico:**
+  - Removido o modo mock do runtime e dos serviços; o app passa a operar apenas com integração real via `api`.
+  - Removido arquivo de mock central e referências de chaveamento por ambiente.
+  - Ajustadas telas principais para permanecerem acessíveis quando a API falhar, com mensagens contextuais por seção, sem bloquear navegação.
+  - Fluxos de filme e Pipocai mantidos acessíveis com fallback visual e ações de atualização.
+- **Arquivos criados/alterados/removidos:**
+  - Alterados: `.env.example`, `src/config/env.ts`, `src/services/auth.service.ts`, `src/services/onboarding.service.ts`, `src/services/home.service.ts`, `src/services/movies.service.ts`, `src/services/collection.service.ts`, `src/services/ratings.service.ts`, `src/services/dashboard.service.ts`, `src/services/profile.service.ts`, `src/services/notifications.service.ts`, `src/services/pipocai.service.ts`, `src/app/home.tsx`, `src/app/descobrir.tsx`, `src/app/colecao.tsx`, `src/app/dashboard.tsx`, `src/app/historico.tsx`, `src/app/notificacoes.tsx`, `src/app/perfil.tsx`, `src/app/adicionar-filme.tsx`, `src/app/avaliar-filme/[id].tsx`, `src/app/pipocai.tsx`, `src/app/pipocai-memoria.tsx`, `src/app/filme-do-dia.tsx`, `src/app/filme/[id].tsx`.
+  - Removidos: `src/services/mock-api.ts`.
+- **Validação executada:**
+  - `npm run format` ✅
+  - `npm run check` ✅
+- **Riscos/pendências para próxima etapa:**
+  - Confirmar contrato final de endpoints do Pipocai com backend (`conversation`, `messages` e `memories`).
+  - Refinar microcopy de indisponibilidade por domínio após alinhamento com produto.
 
 ## 8) Regras de atualização contínua deste documento
 

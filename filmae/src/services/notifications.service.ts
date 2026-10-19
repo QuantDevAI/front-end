@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type { NotificationsPayload } from '@/types/notifications';
@@ -15,10 +13,6 @@ export const notificationsService = {
   routes: NOTIFICATIONS_ROUTES,
 
   async getNotifications(): Promise<NotificationsPayload> {
-    if (env.useMockApi) {
-      return mockApi.notifications.getNotifications();
-    }
-
     try {
       const response = await api.get<ApiEnvelope<NotificationsPayload>>(
         NOTIFICATIONS_ROUTES.notifications,
@@ -34,10 +28,6 @@ export const notificationsService = {
   },
 
   async markAsRead(notificationId: string): Promise<NotificationsPayload> {
-    if (env.useMockApi) {
-      return mockApi.notifications.markAsRead(notificationId);
-    }
-
     try {
       const response = await api.patch<ApiEnvelope<NotificationsPayload>>(
         NOTIFICATIONS_ROUTES.markRead.replace('{id}', notificationId),
@@ -53,10 +43,6 @@ export const notificationsService = {
   },
 
   async markAllAsRead(): Promise<NotificationsPayload> {
-    if (env.useMockApi) {
-      return mockApi.notifications.markAllAsRead();
-    }
-
     try {
       const response = await api.post<ApiEnvelope<NotificationsPayload>>(
         NOTIFICATIONS_ROUTES.readAll,

@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type {
@@ -26,10 +24,6 @@ export const authService = {
   routes: AUTH_ROUTES,
 
   async register(request: RegisterRequest): Promise<RegisterResponse> {
-    if (env.useMockApi) {
-      return mockApi.auth.register(request);
-    }
-
     try {
       const response = await api.post<ApiEnvelope<RegisterResponse>>(AUTH_ROUTES.register, request);
 
@@ -43,10 +37,6 @@ export const authService = {
   },
 
   async login(request: LoginRequest): Promise<LoginResponse> {
-    if (env.useMockApi) {
-      return mockApi.auth.login(request);
-    }
-
     try {
       const response = await api.post<ApiEnvelope<LoginResponse>>(AUTH_ROUTES.login, request);
 
@@ -60,10 +50,6 @@ export const authService = {
   },
 
   async loginWithGoogle(request: GoogleLoginRequest): Promise<GoogleLoginResponse> {
-    if (env.useMockApi) {
-      return mockApi.auth.loginWithGoogle(request);
-    }
-
     try {
       const response = await api.post<ApiEnvelope<GoogleLoginResponse>>(
         AUTH_ROUTES.google,
@@ -80,10 +66,6 @@ export const authService = {
   },
 
   async refreshSession(request: RefreshSessionRequest): Promise<RefreshSessionResponse> {
-    if (env.useMockApi) {
-      return mockApi.auth.refreshSession(request);
-    }
-
     try {
       const response = await api.post<ApiEnvelope<RefreshSessionResponse>>(
         AUTH_ROUTES.refresh,
@@ -100,10 +82,6 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    if (env.useMockApi) {
-      return mockApi.auth.logout();
-    }
-
     try {
       await api.post(AUTH_ROUTES.logout);
     } catch (error: unknown) {

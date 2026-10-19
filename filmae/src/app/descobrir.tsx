@@ -54,8 +54,9 @@ export default function DiscoverScreen() {
       setMovies(moviesResult.data);
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Não foi possível carregar os filmes.';
+        error instanceof Error ? error.message : 'Não foi possível carregar dados do catálogo.';
       setErrorMessage(message);
+      setGenres([]);
       setMovies([]);
     } finally {
       setIsLoading(false);
@@ -143,21 +144,23 @@ export default function DiscoverScreen() {
               <ActivityIndicator color={theme.colors.primary} />
               <Text style={styles.stateText}>Carregando catálogo...</Text>
             </View>
-          ) : errorMessage ? (
-            <View style={styles.stateContainer}>
-              <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-                {errorMessage}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void searchMovies(search)}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.retryButtonText}>Tentar novamente</Text>
-              </Pressable>
-            </View>
           ) : (
             <>
+              {errorMessage ? (
+                <View style={styles.warningBanner}>
+                  <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                    {errorMessage}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void searchMovies(search)}
+                    style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.retryButtonText}>Atualizar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               {!search.trim() ? (
                 <>
                   <View style={styles.section}>
@@ -167,43 +170,61 @@ export default function DiscoverScreen() {
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.posterRow}
                     >
-                      {highlightedMovies.map((movie) => (
-                        <MoviePosterTile
-                          key={movie.id}
-                          height={posterSize.height}
-                          movie={movie}
-                          onPress={() => openMovieDetails(movie.id)}
-                          showCompatibility
-                          width={posterSize.width}
-                        />
-                      ))}
+                      {highlightedMovies.length ? (
+                        highlightedMovies.map((movie) => (
+                          <MoviePosterTile
+                            key={movie.id}
+                            height={posterSize.height}
+                            movie={movie}
+                            onPress={() => openMovieDetails(movie.id)}
+                            showCompatibility
+                            width={posterSize.width}
+                          />
+                        ))
+                      ) : (
+                        <View style={styles.unavailableInlineCard}>
+                          <Text style={styles.unavailableText}>
+                            Dados de catálogo indisponíveis.
+                          </Text>
+                        </View>
+                      )}
                     </ScrollView>
                   </View>
 
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Explorar por gênero</Text>
                     <View style={styles.genreWrap}>
-                      {genres.slice(0, 10).map((genre) => (
-                        <View key={genre.id} style={styles.genreChip}>
-                          <Text style={styles.genreChipText}>{genre.name}</Text>
-                        </View>
-                      ))}
+                      {genres.length ? (
+                        genres.slice(0, 10).map((genre) => (
+                          <View key={genre.id} style={styles.genreChip}>
+                            <Text style={styles.genreChipText}>{genre.name}</Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={styles.unavailableText}>
+                          Gêneros indisponíveis no momento.
+                        </Text>
+                      )}
                     </View>
                   </View>
 
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Todos os filmes</Text>
                     <View style={styles.grid}>
-                      {movies.map((movie) => (
-                        <MoviePosterTile
-                          key={movie.id}
-                          height={posterSize.height}
-                          movie={movie}
-                          onPress={() => openMovieDetails(movie.id)}
-                          showCompatibility
-                          width={posterSize.width}
-                        />
-                      ))}
+                      {movies.length ? (
+                        movies.map((movie) => (
+                          <MoviePosterTile
+                            key={movie.id}
+                            height={posterSize.height}
+                            movie={movie}
+                            onPress={() => openMovieDetails(movie.id)}
+                            showCompatibility
+                            width={posterSize.width}
+                          />
+                        ))
+                      ) : (
+                        <Text style={styles.unavailableText}>Sem dados de filmes disponíveis.</Text>
+                      )}
                     </View>
                   </View>
                 </>
@@ -213,37 +234,45 @@ export default function DiscoverScreen() {
                     {movies.length} resultado{movies.length === 1 ? '' : 's'}
                   </Text>
 
-                  <View style={styles.resultList}>
-                    {movies.map((movie) => (
-                      <Pressable
-                        key={movie.id}
-                        accessibilityRole="button"
-                        onPress={() => openMovieDetails(movie.id)}
-                        style={({ pressed }) => [styles.resultItem, pressed && styles.pressed]}
-                      >
-                        <MoviePosterTile
-                          height={96}
-                          movie={movie}
+                  {movies.length ? (
+                    <View style={styles.resultList}>
+                      {movies.map((movie) => (
+                        <Pressable
+                          key={movie.id}
+                          accessibilityRole="button"
                           onPress={() => openMovieDetails(movie.id)}
-                          width={64}
-                        />
+                          style={({ pressed }) => [styles.resultItem, pressed && styles.pressed]}
+                        >
+                          <MoviePosterTile
+                            height={96}
+                            movie={movie}
+                            onPress={() => openMovieDetails(movie.id)}
+                            width={64}
+                          />
 
-                        <View style={styles.resultText}>
-                          <Text style={styles.resultTitle}>{movie.title}</Text>
-                          <Text style={styles.resultMeta}>
-                            {movie.year} • {movie.director}
-                          </Text>
-                          <Text style={styles.resultMeta}>
-                            {formatRuntimeMinutes(movie.runtimeMinutes)} • IMDb{' '}
-                            {movie.imdb.rating.toFixed(1)}
-                          </Text>
-                          <Text style={styles.resultCompatibility}>
-                            {movie.compatibilityScore}% para você
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
+                          <View style={styles.resultText}>
+                            <Text style={styles.resultTitle}>{movie.title}</Text>
+                            <Text style={styles.resultMeta}>
+                              {movie.year} • {movie.director}
+                            </Text>
+                            <Text style={styles.resultMeta}>
+                              {formatRuntimeMinutes(movie.runtimeMinutes)} • IMDb{' '}
+                              {movie.imdb.rating.toFixed(1)}
+                            </Text>
+                            <Text style={styles.resultCompatibility}>
+                              {movie.compatibilityScore}% para você
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.unavailableInlineCard}>
+                      <Text style={styles.unavailableText}>
+                        Nenhum resultado disponível para esta busca agora.
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
             </>
@@ -333,14 +362,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: theme.fontSizes.body,
   },
-  errorText: {
-    color: theme.colors.danger,
-    fontSize: theme.fontSizes.body,
-    textAlign: 'center',
-    paddingHorizontal: theme.spacing.xxl,
-  },
   retryButton: {
-    marginTop: theme.spacing.lg,
     height: 42,
     borderRadius: theme.radii.md,
     borderWidth: 1,
@@ -435,5 +457,34 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: theme.opacity.pressed,
+  },
+  warningBanner: {
+    marginHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+  },
+  unavailableInlineCard: {
+    minWidth: 220,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.warmBorder,
+    backgroundColor: theme.colors.warmSurface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    justifyContent: 'center',
+  },
+  unavailableText: {
+    color: theme.colors.creamMuted,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
   },
 });

@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type {
@@ -26,10 +24,6 @@ export const onboardingService = {
   routes: ONBOARDING_ROUTES,
 
   async getProgress(): Promise<OnboardingProgress> {
-    if (env.useMockApi) {
-      return mockApi.onboarding.getProgress();
-    }
-
     try {
       const response = await api.get<ApiEnvelope<OnboardingProgress>>(ONBOARDING_ROUTES.progress);
 
@@ -43,10 +37,6 @@ export const onboardingService = {
   },
 
   async saveGenres(request: SaveOnboardingGenresRequest): Promise<SaveOnboardingGenresResponse> {
-    if (env.useMockApi) {
-      return mockApi.onboarding.saveGenres(request);
-    }
-
     try {
       const response = await api.put<ApiEnvelope<SaveOnboardingGenresResponse>>(
         ONBOARDING_ROUTES.genres,
@@ -65,10 +55,6 @@ export const onboardingService = {
   async saveFavoriteMovies(
     request: SaveOnboardingFavoriteMoviesRequest,
   ): Promise<SaveOnboardingFavoriteMoviesResponse> {
-    if (env.useMockApi) {
-      return mockApi.onboarding.saveFavoriteMovies(request);
-    }
-
     try {
       const response = await api.put<ApiEnvelope<SaveOnboardingFavoriteMoviesResponse>>(
         ONBOARDING_ROUTES.favoriteMovies,
@@ -87,10 +73,6 @@ export const onboardingService = {
   async saveProfileStory(
     request: SaveOnboardingProfileStoryRequest,
   ): Promise<SaveOnboardingProfileStoryResponse> {
-    if (env.useMockApi) {
-      return mockApi.onboarding.saveProfileStory(request);
-    }
-
     try {
       const response = await api.put<ApiEnvelope<SaveOnboardingProfileStoryResponse>>(
         ONBOARDING_ROUTES.profileStory,
@@ -107,10 +89,6 @@ export const onboardingService = {
   },
 
   async completeOnboarding(): Promise<CompleteOnboardingResponse> {
-    if (env.useMockApi) {
-      return mockApi.onboarding.completeOnboarding();
-    }
-
     try {
       const response = await api.post<ApiEnvelope<CompleteOnboardingResponse>>(
         ONBOARDING_ROUTES.complete,

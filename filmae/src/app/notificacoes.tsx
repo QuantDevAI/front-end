@@ -119,21 +119,23 @@ export default function NotificationsScreen() {
             <ActivityIndicator color={theme.colors.primary} />
             <Text style={styles.stateText}>Carregando notificações...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadNotifications()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
         ) : notificationsData ? (
           <>
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadNotifications()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <View style={styles.topActions}>
               <Text style={styles.unreadText}>{notificationsData.unreadCount} não lidas</Text>
               <Pressable
@@ -197,6 +199,20 @@ export default function NotificationsScreen() {
           </>
         ) : (
           <View style={styles.centerState}>
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadNotifications()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
             <Text style={styles.stateText}>Sem notificações para exibir.</Text>
           </View>
         )}
@@ -298,6 +314,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.fontSizes.body,
     fontWeight: theme.fontWeights.semiBold,
+  },
+  warningBanner: {
+    marginHorizontal: theme.spacing.xxl,
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   listContainer: {
     paddingHorizontal: theme.spacing.xxl,

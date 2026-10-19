@@ -257,21 +257,23 @@ export default function CollectionScreen() {
               <ActivityIndicator color={theme.colors.primary} />
               <Text style={styles.stateText}>Carregando sua coleção...</Text>
             </View>
-          ) : errorMessage ? (
-            <View style={styles.stateContainer}>
-              <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-                {errorMessage}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void loadCollection(activeFilter)}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.retryButtonText}>Tentar novamente</Text>
-              </Pressable>
-            </View>
           ) : collection && collection.items.length > 0 ? (
             <View style={styles.list}>
+              {errorMessage ? (
+                <View style={styles.warningBanner}>
+                  <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                    {errorMessage}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void loadCollection(activeFilter)}
+                    style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.retryButtonText}>Atualizar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               {collection.items.map((movie) => {
                 const isUpdating = updatingMovieId === movie.id;
 
@@ -448,6 +450,21 @@ export default function CollectionScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
+              {errorMessage ? (
+                <View style={styles.warningBanner}>
+                  <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                    {errorMessage}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void loadCollection(activeFilter)}
+                    style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.retryButtonText}>Atualizar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               <MaterialIcons color={theme.colors.creamMuted} name="local-movies" size={28} />
               <Text style={styles.emptyTitle}>Sua coleção está vazia</Text>
               <Text style={styles.emptyText}>
@@ -692,6 +709,22 @@ const styles = StyleSheet.create({
     color: theme.colors.creamMuted,
     fontSize: theme.fontSizes.body,
     lineHeight: 20,
+    textAlign: 'center',
+  },
+  warningBanner: {
+    width: '100%',
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
     textAlign: 'center',
   },
   disabledAction: {

@@ -58,20 +58,46 @@ export default function ProfileScreen() {
     setErrorMessage(null);
 
     try {
-      const [profileResult, dashboardResult, notificationsResult] = await Promise.all([
+      const [profileResult, dashboardResult, notificationsResult] = await Promise.allSettled([
         profileService.getMe(),
         dashboardService.getDashboard(),
         notificationsService.getNotifications(),
       ]);
 
-      setProfileData(profileResult);
-      setDashboardData(dashboardResult);
-      setNotificationsData(notificationsResult);
-      setNameInput(profileResult.user.name);
-      setBioInput(profileResult.user.bio);
+      const warnings: string[] = [];
+
+      if (profileResult.status === 'fulfilled') {
+        setProfileData(profileResult.value);
+        setNameInput(profileResult.value.user.name);
+        setBioInput(profileResult.value.user.bio);
+      } else {
+        setProfileData(null);
+        setNameInput('');
+        setBioInput('');
+        warnings.push('Perfil com dados indisponíveis no momento.');
+      }
+
+      if (dashboardResult.status === 'fulfilled') {
+        setDashboardData(dashboardResult.value);
+      } else {
+        setDashboardData(null);
+        warnings.push('Dashboard indisponível no momento.');
+      }
+
+      if (notificationsResult.status === 'fulfilled') {
+        setNotificationsData(notificationsResult.value);
+      } else {
+        setNotificationsData(null);
+        warnings.push('Notificações indisponíveis no momento.');
+      }
+
+      setErrorMessage(warnings.length ? warnings.join(' ') : null);
+      setIsEditing(false);
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Não foi possível carregar o perfil.';
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível carregar as seções do perfil agora.';
       setErrorMessage(message);
       setProfileData(null);
       setDashboardData(null);
@@ -92,6 +118,11 @@ export default function ProfileScreen() {
   }, [loadProfile]);
 
   const saveProfile = useCallback(async () => {
+    if (!profileData) {
+      setErrorMessage('A edição do perfil está indisponível enquanto os dados não carregarem.');
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage(null);
 
@@ -111,16 +142,15 @@ export default function ProfileScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [bioInput, nameInput]);
+  }, [bioInput, nameInput, profileData]);
 
   const profileInitial = useMemo(() => {
-    if (!profileData) {
-      return '?';
-    }
-
-    const name = profileData.user.name.trim();
+    const name = (profileData?.user.name ?? nameInput).trim();
     return name ? name.charAt(0).toUpperCase() : '?';
-  }, [profileData]);
+  }, [nameInput, profileData]);
+  const createdAt = profileData?.user.createdAt;
+  const dashboardTopGenres = dashboardData?.topGenres ?? [];
+  const historyPreview = dashboardData?.historyPreview ?? [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -130,24 +160,26 @@ export default function ProfileScreen() {
             <ActivityIndicator color={theme.colors.primary} size="large" />
             <Text style={styles.stateText}>Carregando seu perfil...</Text>
           </View>
-        ) : errorMessage ? (
-          <View style={styles.centerState}>
-            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadProfile()}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryButtonText}>Tentar novamente</Text>
-            </Pressable>
-          </View>
-        ) : profileData && dashboardData && notificationsData ? (
+        ) : (
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {errorMessage ? (
+              <View style={styles.warningBanner}>
+                <Text accessibilityLiveRegion="polite" style={styles.warningText}>
+                  {errorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadProfile()}
+                  style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.retryButtonText}>Atualizar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <View style={styles.headerCard}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{profileInitial}</Text>
@@ -155,10 +187,14 @@ export default function ProfileScreen() {
 
               <View style={styles.headerText}>
                 <Text style={styles.headerTitle}>Seu perfil</Text>
-                <Text style={styles.headerSubtitle}>{profileData.user.email}</Text>
                 <Text style={styles.headerSubtitle}>
-                  Conta criada em {formatIsoDate(profileData.user.createdAt)}
+                  {profileData?.user.email ?? 'Dados da conta indisponíveis no momento'}
                 </Text>
+                {createdAt ? (
+                  <Text style={styles.headerSubtitle}>
+                    Conta criada em {formatIsoDate(createdAt)}
+                  </Text>
+                ) : null}
               </View>
             </View>
 
@@ -167,15 +203,26 @@ export default function ProfileScreen() {
                 <Text style={styles.cardTitle}>Dados do perfil</Text>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setIsEditing((currentState) => !currentState)}
+                  onPress={() => {
+                    if (!profileData) {
+                      setErrorMessage(
+                        'A edição do perfil estará disponível quando o servidor responder.',
+                      );
+                      return;
+                    }
+
+                    setIsEditing((currentState) => !currentState);
+                  }}
                   style={({ pressed }) => pressed && styles.pressed}
                 >
-                  <Text style={styles.cardAction}>{isEditing ? 'Cancelar' : 'Editar'}</Text>
+                  <Text style={styles.cardAction}>
+                    {profileData ? (isEditing ? 'Cancelar' : 'Editar') : 'Indisponível'}
+                  </Text>
                 </Pressable>
               </View>
 
               <Text style={styles.fieldLabel}>Nome</Text>
-              {isEditing ? (
+              {isEditing && profileData ? (
                 <TextInput
                   accessibilityLabel="Nome do perfil"
                   autoCapitalize="words"
@@ -185,11 +232,13 @@ export default function ProfileScreen() {
                   value={nameInput}
                 />
               ) : (
-                <Text style={styles.fieldValue}>{profileData.user.name}</Text>
+                <Text style={styles.fieldValue}>
+                  {profileData?.user.name ?? 'Nome indisponível'}
+                </Text>
               )}
 
               <Text style={styles.fieldLabel}>Bio</Text>
-              {isEditing ? (
+              {isEditing && profileData ? (
                 <TextInput
                   accessibilityLabel="Bio do perfil"
                   autoCapitalize="sentences"
@@ -202,11 +251,11 @@ export default function ProfileScreen() {
                 />
               ) : (
                 <Text style={styles.fieldValue}>
-                  {profileData.user.bio || 'Sem bio cadastrada.'}
+                  {profileData?.user.bio || 'Bio indisponível no momento.'}
                 </Text>
               )}
 
-              {isEditing ? (
+              {isEditing && profileData ? (
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSaving}
@@ -229,19 +278,19 @@ export default function ProfileScreen() {
 
               <View style={styles.kpiGrid}>
                 <View style={styles.kpiCard}>
-                  <Text style={styles.kpiNumber}>{dashboardData.kpis.watchedCount}</Text>
+                  <Text style={styles.kpiNumber}>{dashboardData?.kpis.watchedCount ?? 0}</Text>
                   <Text style={styles.kpiLabel}>Assistidos</Text>
                 </View>
                 <View style={styles.kpiCard}>
-                  <Text style={styles.kpiNumber}>{dashboardData.kpis.watchlistCount}</Text>
+                  <Text style={styles.kpiNumber}>{dashboardData?.kpis.watchlistCount ?? 0}</Text>
                   <Text style={styles.kpiLabel}>Quero assistir</Text>
                 </View>
                 <View style={styles.kpiCard}>
-                  <Text style={styles.kpiNumber}>{dashboardData.kpis.favoriteCount}</Text>
+                  <Text style={styles.kpiNumber}>{dashboardData?.kpis.favoriteCount ?? 0}</Text>
                   <Text style={styles.kpiLabel}>Favoritos</Text>
                 </View>
                 <View style={styles.kpiCard}>
-                  <Text style={styles.kpiNumber}>{dashboardData.kpis.ratedCount}</Text>
+                  <Text style={styles.kpiNumber}>{dashboardData?.kpis.ratedCount ?? 0}</Text>
                   <Text style={styles.kpiLabel}>Avaliados</Text>
                 </View>
               </View>
@@ -249,7 +298,8 @@ export default function ProfileScreen() {
               <View style={styles.statsRow}>
                 <MaterialIcons color={theme.colors.creamMuted} name="schedule" size={17} />
                 <Text style={styles.statsText}>
-                  Tempo assistido: {formatMinutesAsHours(dashboardData.kpis.totalMinutesWatched)}
+                  Tempo assistido:{' '}
+                  {formatMinutesAsHours(dashboardData?.kpis.totalMinutesWatched ?? 0)}
                 </Text>
               </View>
 
@@ -257,9 +307,9 @@ export default function ProfileScreen() {
                 <MaterialIcons color={theme.colors.creamMuted} name="movie-filter" size={17} />
                 <Text style={styles.statsText}>
                   Gêneros em alta:{' '}
-                  {dashboardData.topGenres.length
-                    ? dashboardData.topGenres.map((genre) => genre.genre).join(', ')
-                    : 'nenhum ainda'}
+                  {dashboardTopGenres.length
+                    ? dashboardTopGenres.map((genre) => genre.genre).join(', ')
+                    : 'dados indisponíveis'}
                 </Text>
               </View>
             </View>
@@ -297,16 +347,40 @@ export default function ProfileScreen() {
                   size={18}
                 />
                 <Text style={styles.shortcutText}>
-                  Notificações ({notificationsData.unreadCount} não lidas)
+                  Notificações ({notificationsData?.unreadCount ?? 0} não lidas)
                 </Text>
+                <MaterialIcons color={theme.colors.creamMuted} name="chevron-right" size={18} />
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/pipocai-memoria')}
+                style={({ pressed }) => [styles.shortcutButton, pressed && styles.pressed]}
+              >
+                <MaterialIcons color={theme.colors.creamMuted} name="psychology" size={18} />
+                <Text style={styles.shortcutText}>Memória do Pipocai</Text>
+                <MaterialIcons color={theme.colors.creamMuted} name="chevron-right" size={18} />
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/adicionar-filme')}
+                style={({ pressed }) => [styles.shortcutButton, pressed && styles.pressed]}
+              >
+                <MaterialIcons
+                  color={theme.colors.creamMuted}
+                  name="add-circle-outline"
+                  size={18}
+                />
+                <Text style={styles.shortcutText}>Registrar filme assistido</Text>
                 <MaterialIcons color={theme.colors.creamMuted} name="chevron-right" size={18} />
               </Pressable>
             </View>
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Histórico recente</Text>
-              {dashboardData.historyPreview.length ? (
-                dashboardData.historyPreview.slice(0, 3).map((entry) => (
+              {historyPreview.length ? (
+                historyPreview.slice(0, 3).map((entry) => (
                   <Pressable
                     key={entry.movieId}
                     accessibilityRole="button"
@@ -330,16 +404,10 @@ export default function ProfileScreen() {
                   </Pressable>
                 ))
               ) : (
-                <Text style={styles.historyEmpty}>
-                  Você ainda não marcou filmes como assistidos.
-                </Text>
+                <Text style={styles.historyEmpty}>Histórico indisponível no momento.</Text>
               )}
             </View>
           </ScrollView>
-        ) : (
-          <View style={styles.centerState}>
-            <Text style={styles.stateText}>Sem dados de perfil para exibir.</Text>
-          </View>
         )}
 
         <AppBottomNav activeTab="profile" />
@@ -395,6 +463,20 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.fontSizes.body,
     fontWeight: theme.fontWeights.semiBold,
+  },
+  warningBanner: {
+    borderRadius: theme.radii.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 114, 0.45)',
+    backgroundColor: 'rgba(255, 107, 114, 0.1)',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  warningText: {
+    color: theme.colors.cream,
+    fontSize: theme.fontSizes.small,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   headerCard: {
     borderRadius: theme.radii.xl,

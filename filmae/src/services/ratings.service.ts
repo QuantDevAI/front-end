@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type {
@@ -22,10 +20,6 @@ export const ratingsService = {
     movieId: string,
     request: SaveMovieRatingRequest,
   ): Promise<SaveMovieRatingResponse> {
-    if (env.useMockApi) {
-      return mockApi.ratings.saveMovieRating(movieId, request);
-    }
-
     try {
       const response = await api.put<ApiEnvelope<SaveMovieRatingResponse>>(
         RATINGS_ROUTES.upsertRating.replace('{tconst}', movieId),
@@ -42,10 +36,6 @@ export const ratingsService = {
   },
 
   async deleteMovieRating(movieId: string): Promise<DeleteMovieRatingResponse> {
-    if (env.useMockApi) {
-      return mockApi.ratings.deleteMovieRating(movieId);
-    }
-
     try {
       const response = await api.delete<ApiEnvelope<DeleteMovieRatingResponse>>(
         RATINGS_ROUTES.deleteRating.replace('{tconst}', movieId),
@@ -61,10 +51,6 @@ export const ratingsService = {
   },
 
   async getMovieRating(movieId: string): Promise<number | null> {
-    if (env.useMockApi) {
-      return mockApi.ratings.getMovieRating(movieId);
-    }
-
     try {
       const response = await api.get<ApiEnvelope<{ rating: number | null }>>(
         RATINGS_ROUTES.getRating.replace('{tconst}', movieId),

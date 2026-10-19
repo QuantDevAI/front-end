@@ -1,6 +1,4 @@
 import { api } from '@/services/api';
-import { env } from '@/config/env';
-import { mockApi } from '@/services/mock-api';
 import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import type { ApiEnvelope } from '@/types/api';
 import type {
@@ -20,10 +18,6 @@ export const moviesService = {
   routes: MOVIES_ROUTES,
 
   async getGenres(): Promise<GenreCatalogItem[]> {
-    if (env.useMockApi) {
-      return mockApi.movies.getGenres();
-    }
-
     try {
       const response = await api.get<ApiEnvelope<GenreCatalogItem[]>>(MOVIES_ROUTES.genres);
 
@@ -37,10 +31,6 @@ export const moviesService = {
   },
 
   async getMovieDetails(movieId: string): Promise<MovieDetails> {
-    if (env.useMockApi) {
-      return mockApi.movies.getMovieDetails(movieId);
-    }
-
     try {
       const response = await api.get<ApiEnvelope<MovieDetails>>(
         MOVIES_ROUTES.movieDetails.replace('{tconst}', movieId),
@@ -56,10 +46,6 @@ export const moviesService = {
   },
 
   async searchMovies(filters: MovieSearchFilters): Promise<MovieSearchResult> {
-    if (env.useMockApi) {
-      return mockApi.movies.searchMovies(filters);
-    }
-
     try {
       const response = await api.get<ApiEnvelope<MovieSearchResult>>(MOVIES_ROUTES.movies, {
         params: filters,
