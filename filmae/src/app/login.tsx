@@ -1,8 +1,6 @@
-import {
-  setPendingAuthLoadingTask,
-  type AuthLoadingTargetRoute,
-} from '@/services/auth-loading.service';
+import { setPendingAuthLoadingTask } from '@/services/auth-loading.service';
 import { authService } from '@/services/auth.service';
+import { resolveAuthenticatedRoute } from '@/services/session-route.service';
 import { theme } from '@/theme';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -32,14 +30,6 @@ export default function LoginScreen() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function resolveNextRoute(nextScreen: 'home' | 'onboarding'): AuthLoadingTargetRoute {
-    if (nextScreen === 'home') {
-      return '/home';
-    }
-
-    return '/onboarding';
-  }
 
   function handleVoltar() {
     router.back();
@@ -73,7 +63,11 @@ export default function LoginScreen() {
           password: senha,
         });
 
-        return resolveNextRoute(result.nextScreen);
+        if (result.nextScreen === 'home') {
+          return '/home';
+        }
+
+        return resolveAuthenticatedRoute();
       },
     });
 

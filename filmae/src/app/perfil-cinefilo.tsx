@@ -1,6 +1,7 @@
 import { useRegistration } from '@/context/RegistrationContext';
 import { setPendingAuthLoadingTask } from '@/services/auth-loading.service';
 import { onboardingService } from '@/services/onboarding.service';
+import { tokenStorage } from '@/services/token-storage';
 import { theme } from '@/theme';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -59,7 +60,8 @@ export default function CinephileProfileScreen() {
       return;
     }
 
-    if (!account) {
+    const hasSession = Boolean(account) || Boolean(await tokenStorage.getAccessToken());
+    if (!hasSession) {
       setErrorMessage('Volte ao cadastro e preencha seus dados antes de continuar.');
       return;
     }
@@ -73,22 +75,16 @@ export default function CinephileProfileScreen() {
     setPendingAuthLoadingTask({
       mode: 'profile',
       run: async () => {
-        // TODO: o backend ainda não tem os endpoints /users/me/onboarding/*.
-        // Enquanto isso, uma falha aqui não bloqueia o fim do cadastro.
-        try {
-          await onboardingService.saveGenres({
-            genres: genreIds,
-          });
-          await onboardingService.saveFavoriteMovies({
-            movieIds: favoriteMovieIds,
-          });
-          await onboardingService.saveProfileStory({
-            text: normalizedStory,
-          });
-          await onboardingService.completeOnboarding();
-        } catch {
-          // ignorado temporariamente
-        }
+        await onboardingService.saveGenres({
+          genres: genreIds,
+        });
+        await onboardingService.saveFavoriteMovies({
+          movieIds: favoriteMovieIds,
+        });
+        await onboardingService.saveProfileStory({
+          text: normalizedStory,
+        });
+        await onboardingService.completeOnboarding();
 
         clearRegistration();
         return '/perfil-criado';

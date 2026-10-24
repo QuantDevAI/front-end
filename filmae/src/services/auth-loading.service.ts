@@ -1,7 +1,13 @@
 export type AuthLoadingMode = 'login' | 'profile' | 'register';
 
 export type AuthLoadingTargetRoute =
-  '/home' | '/login' | '/onboarding' | '/perfil-criado' | '/preferencias-generos';
+  | '/filmes-favoritos'
+  | '/home'
+  | '/login'
+  | '/onboarding'
+  | '/perfil-cinefilo'
+  | '/perfil-criado'
+  | '/preferencias-generos';
 
 type PendingAuthLoadingTask = {
   mode: AuthLoadingMode;

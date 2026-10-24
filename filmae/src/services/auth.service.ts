@@ -1,8 +1,10 @@
 import { api } from '@/services/api';
-import { normalizeServiceError } from '@/services/service-error';
+import { normalizeServiceError, requireApiData } from '@/services/service-error';
 import { tokenStorage } from '@/services/token-storage';
+import type { ApiEnvelope } from '@/types/api';
 import type {
-  AuthUser,
+  GoogleLoginRequest,
+  GoogleLoginResponse,
   LoginRequest,
   LoginResponse,
   RefreshSessionRequest,
@@ -12,84 +14,77 @@ import type {
 } from '@/types/auth';
 
 const AUTH_ROUTES = {
+  google: '/auth/google',
   login: '/auth/login',
   logout: '/auth/logout',
-  me: '/users/me',
   refresh: '/auth/refresh',
   register: '/auth/register',
 } as const;
 
-// Formatos reais devolvidos pelo backend Spring
-type BackendTokens = {
-  accessToken: string;
-  expiresIn: number;
-  refreshToken: string;
-  tokenType: string;
-};
-
-type BackendUser = {
-  email: string;
-  id: string;
-  name: string;
-};
+async function persistSession(tokens: { accessToken: string; refreshToken: string }) {
+  await tokenStorage.saveTokens(tokens);
+}
 
 export const authService = {
   routes: AUTH_ROUTES,
 
   async register(request: RegisterRequest): Promise<RegisterResponse> {
     try {
-      await api.post<BackendUser>(AUTH_ROUTES.register, request);
+      const response = await api.post<ApiEnvelope<RegisterResponse>>(AUTH_ROUTES.register, request);
+      const session = requireApiData(
+        response.data,
+        'Resposta inválida ao criar a conta. Tente novamente em instantes.',
+      );
+      await persistSession(session);
+      return session;
     } catch (error: unknown) {
+      await tokenStorage.clear();
       throw normalizeServiceError(error, 'Não foi possível criar a conta no momento.');
     }
-
-    // O backend não devolve tokens no cadastro: entra automaticamente em seguida.
-    const session = await authService.login({
-      email: request.email,
-      password: request.password,
-    });
-
-    return { ...session, nextScreen: 'onboarding' };
   },
 
   async login(request: LoginRequest): Promise<LoginResponse> {
     try {
-      const { data: tokens } = await api.post<BackendTokens>(AUTH_ROUTES.login, request);
-      await tokenStorage.saveTokens(tokens);
-
-      // O login só devolve tokens; os dados do usuário vêm de /users/me.
-      const { data: me } = await api.get<BackendUser>(AUTH_ROUTES.me);
-
-      const user: AuthUser = {
-        email: me.email,
-        id: me.id,
-        name: me.name,
-        onboardingCompleted: false,
-      };
-
-      return {
-        accessToken: tokens.accessToken,
-        expiresIn: tokens.expiresIn,
-        nextScreen: 'home',
-        refreshToken: tokens.refreshToken,
-        user,
-      };
+      const response = await api.post<ApiEnvelope<LoginResponse>>(AUTH_ROUTES.login, request);
+      const session = requireApiData(
+        response.data,
+        'Resposta inválida ao realizar login. Tente novamente em instantes.',
+      );
+      await persistSession(session);
+      return session;
     } catch (error: unknown) {
       await tokenStorage.clear();
       throw normalizeServiceError(error, 'Não foi possível realizar login no momento.');
     }
   },
 
+  async loginWithGoogle(request: GoogleLoginRequest): Promise<GoogleLoginResponse> {
+    try {
+      const response = await api.post<ApiEnvelope<GoogleLoginResponse>>(AUTH_ROUTES.google, request);
+      const session = requireApiData(
+        response.data,
+        'Resposta inválida ao entrar com o Google. Tente novamente em instantes.',
+      );
+      await persistSession(session);
+      return session;
+    } catch (error: unknown) {
+      await tokenStorage.clear();
+      throw normalizeServiceError(error, 'Não foi possível entrar com o Google no momento.');
+    }
+  },
+
   async refreshSession(request: RefreshSessionRequest): Promise<RefreshSessionResponse> {
     try {
-      const { data } = await api.post<BackendTokens>(AUTH_ROUTES.refresh, request);
-      await tokenStorage.saveTokens(data);
-
-      return {
-        accessToken: data.accessToken,
-        expiresIn: data.expiresIn,
-        refreshToken: data.refreshToken,
-      };
+      const response = await api.post<ApiEnvelope<RefreshSessionResponse>>(
+        AUTH_ROUTES.refresh,
+        request,
+      );
+      const tokens = requireApiData(
+        response.data,
+        'Resposta inválida ao renovar a sessão. Tente novamente em instantes.',
+      );
+      await persistSession(tokens);
+      return tokens;
     } catch (error: unknown) {
       throw normalizeServiceError(error, 'Não foi possível renovar a sessão no momento.');
     }

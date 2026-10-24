@@ -1,4 +1,4 @@
-import type { ApiEnvelope, ApiErrorCode, ApiFieldError } from '@/types/api';
+import type { ApiEnvelope, ApiErrorCode, ApiErrorEnvelope, ApiFieldError } from '@/types/api';
 import { isAxiosError } from 'axios';
 
 type ServiceErrorInput = {
@@ -28,13 +28,29 @@ export class ServiceError extends Error {
   }
 }
 
-// Formato real dos erros do backend Spring
-type BackendErrorResponse = {
-  error?: string;
-  errors?: Record<string, string>;
-  message?: string;
-  status?: number;
-};
+const KNOWN_ERROR_CODES = new Set<ApiErrorCode>([
+  'VALIDATION_ERROR',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'RESOURCE_NOT_FOUND',
+  'EMAIL_ALREADY_EXISTS',
+  'STATE_CONFLICT',
+  'ONBOARDING_INCOMPLETE',
+  'RATE_LIMIT_EXCEEDED',
+  'INTERNAL_ERROR',
+  'DEPENDENCY_UNAVAILABLE',
+  'NETWORK_ERROR',
+  'UNKNOWN_ERROR',
+]);
+
+function isApiErrorEnvelope(value: unknown): value is ApiErrorEnvelope {
+  if (!value || typeof value !== 'object' || !('error' in value)) {
+    return false;
+  }
+
+  const error = (value as ApiErrorEnvelope).error;
+  return Boolean(error && typeof error === 'object' && typeof error.code === 'string');
+}
 
 export function requireApiData<TData>(
   payload: ApiEnvelope<TData> | undefined,
@@ -55,7 +71,7 @@ export function normalizeServiceError(error: unknown, fallbackMessage: string): 
     return error;
   }
 
-  if (isAxiosError<BackendErrorResponse>(error)) {
+  if (isAxiosError(error)) {
     const status = error.response?.status;
     const body = error.response?.data;
 
@@ -67,15 +83,14 @@ export function normalizeServiceError(error: unknown, fallbackMessage: string): 
       });
     }
 
-    const fields = body?.errors
-      ? Object.entries(body.errors).map(([field, message]) => ({ field, message }))
-      : undefined;
-
-    if (status === 409) {
+    if (isApiErrorEnvelope(body)) {
+      const code = KNOWN_ERROR_CODES.has(body.error.code) ? body.error.code : 'UNKNOWN_ERROR';
       return new ServiceError({
         cause: error,
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: 'Este e-mail já está cadastrado.',
+        code,
+        fields: body.error.fields,
+        message: body.error.message || fallbackMessage,
+        requestId: body.error.requestId,
         status,
       });
     }
@@ -85,17 +100,6 @@ export function normalizeServiceError(error: unknown, fallbackMessage: string): 
         cause: error,
         code: 'UNAUTHORIZED',
         message: 'E-mail ou senha incorretos.',
-        status,
-      });
-    }
-
-    if (status === 400) {
-      return new ServiceError({
-        cause: error,
-        code: 'VALIDATION_ERROR',
-        fields,
-        message:
-          'Dados inválidos. A senha precisa ter 8+ caracteres, com maiúscula, minúscula, número e símbolo.',
         status,
       });
     }

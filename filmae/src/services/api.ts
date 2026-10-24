@@ -41,8 +41,13 @@ async function refreshTokens(): Promise<string | null> {
 
   try {
     const { data } = await axios.post(`${env.apiUrl}/auth/refresh`, { refreshToken });
-    await tokenStorage.saveTokens(data);
-    return data.accessToken as string;
+    const tokens = data?.data ?? data;
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      await tokenStorage.clear();
+      return null;
+    }
+    await tokenStorage.saveTokens(tokens);
+    return tokens.accessToken as string;
   } catch {
     await tokenStorage.clear();
     return null;

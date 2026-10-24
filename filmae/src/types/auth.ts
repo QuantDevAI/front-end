@@ -2,7 +2,7 @@ export type AuthNextScreen = 'home' | 'onboarding';
 
 export type AuthUser = {
   email: string;
-  id: string; // o backend usa UUID
+  id: number;
   name: string;
   onboardingCompleted: boolean;
 };
@@ -19,6 +19,10 @@ export type RegisterRequest = {
   password: string;
 };
 
+export type RegisterResponse = AuthSessionTokens & {
+  user: AuthUser;
+};
+
 export type LoginRequest = {
   email: string;
   password: string;
@@ -29,7 +33,11 @@ export type LoginResponse = AuthSessionTokens & {
   user: AuthUser;
 };
 
-export type RegisterResponse = LoginResponse;
+export type GoogleLoginRequest = {
+  idToken: string;
+};
+
+export type GoogleLoginResponse = LoginResponse;
 
 export type RefreshSessionRequest = {
   refreshToken: string;

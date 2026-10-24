@@ -91,16 +91,16 @@ export default function CadastroScreen() {
     setErrorMessage(null);
     setIsSubmitting(true);
 
+    saveAccount({
+      email: normalizedEmail,
+      name: normalizedName,
+      password: senha,
+    });
+
     setPendingAuthLoadingTask({
       mode: 'register',
       run: async () => {
         await authService.register({
-          email: normalizedEmail,
-          name: normalizedName,
-          password: senha,
-        });
-
-        saveAccount({
           email: normalizedEmail,
           name: normalizedName,
           password: senha,
