@@ -73,16 +73,22 @@ export default function CinephileProfileScreen() {
     setPendingAuthLoadingTask({
       mode: 'profile',
       run: async () => {
-        await onboardingService.saveGenres({
-          genres: genreIds,
-        });
-        await onboardingService.saveFavoriteMovies({
-          movieIds: favoriteMovieIds,
-        });
-        await onboardingService.saveProfileStory({
-          text: normalizedStory,
-        });
-        await onboardingService.completeOnboarding();
+        // TODO: o backend ainda não tem os endpoints /users/me/onboarding/*.
+        // Enquanto isso, uma falha aqui não bloqueia o fim do cadastro.
+        try {
+          await onboardingService.saveGenres({
+            genres: genreIds,
+          });
+          await onboardingService.saveFavoriteMovies({
+            movieIds: favoriteMovieIds,
+          });
+          await onboardingService.saveProfileStory({
+            text: normalizedStory,
+          });
+          await onboardingService.completeOnboarding();
+        } catch {
+          // ignorado temporariamente
+        }
 
         clearRegistration();
         return '/perfil-criado';

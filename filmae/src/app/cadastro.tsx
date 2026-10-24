@@ -69,8 +69,17 @@ export default function CadastroScreen() {
       return;
     }
 
-    if (senha.length < 6) {
-      setErrorMessage('A senha precisa ter pelo menos 6 caracteres.');
+    const senhaForte =
+      senha.length >= 8 &&
+      /[A-Z]/.test(senha) &&
+      /[a-z]/.test(senha) &&
+      /[0-9]/.test(senha) &&
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]/.test(senha);
+
+    if (!senhaForte) {
+      setErrorMessage(
+        'A senha precisa ter 8+ caracteres, com maiúscula, minúscula, número e símbolo.',
+      );
       return;
     }
 

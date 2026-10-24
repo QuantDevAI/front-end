@@ -30,11 +30,12 @@
           "image": "./assets/images/filmae-mascote.png",
           "imageWidth": 220
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     }
   }
 }
