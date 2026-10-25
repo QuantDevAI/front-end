@@ -60,7 +60,10 @@ export const authService = {
 
   async loginWithGoogle(request: GoogleLoginRequest): Promise<GoogleLoginResponse> {
     try {
-      const response = await api.post<ApiEnvelope<GoogleLoginResponse>>(AUTH_ROUTES.google, request);
+      const response = await api.post<ApiEnvelope<GoogleLoginResponse>>(
+        AUTH_ROUTES.google,
+        request,
+      );
       const session = requireApiData(
         response.data,
         'Resposta inválida ao entrar com o Google. Tente novamente em instantes.',
