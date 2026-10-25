@@ -2,10 +2,7 @@ import { onboardingService } from '@/services/onboarding.service';
 import { tokenStorage } from '@/services/token-storage';
 
 export type AuthenticatedAppRoute =
-  | '/filmes-favoritos'
-  | '/home'
-  | '/perfil-cinefilo'
-  | '/preferencias-generos';
+  '/filmes-favoritos' | '/home' | '/perfil-cinefilo' | '/preferencias-generos';
 
 export type PublicAppRoute = '/onboarding';
 

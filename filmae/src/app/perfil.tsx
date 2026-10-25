@@ -16,6 +16,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProfilePhoto } from '@/hooks/useProfilePhoto';
+import { showProfilePhotoMenu } from '@/services/profile-photo.service';
+import { Image } from 'expo-image';
 
 function formatMinutesAsHours(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
@@ -148,6 +151,15 @@ export default function ProfileScreen() {
     const name = (profileData?.user.name ?? nameInput).trim();
     return name ? name.charAt(0).toUpperCase() : '?';
   }, [nameInput, profileData]);
+
+  const photoUri = useProfilePhoto(profileData?.user.id);
+
+  const handleChangePhoto = useCallback(() => {
+    if (profileData) {
+      showProfilePhotoMenu(profileData.user.id);
+    }
+  }, [profileData]);
+
   const createdAt = profileData?.user.createdAt;
   const dashboardTopGenres = dashboardData?.topGenres ?? [];
   const historyPreview = dashboardData?.historyPreview ?? [];
@@ -181,9 +193,19 @@ export default function ProfileScreen() {
             ) : null}
 
             <View style={styles.headerCard}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{profileInitial}</Text>
-              </View>
+              <Pressable
+                accessibilityLabel="Alterar foto de perfil"
+                accessibilityRole="button"
+                disabled={!profileData}
+                onPress={handleChangePhoto}
+                style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
+              >
+                {photoUri ? (
+                  <Image contentFit="cover" source={{ uri: photoUri }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{profileInitial}</Text>
+                )}
+              </Pressable>
 
               <View style={styles.headerText}>
                 <Text style={styles.headerTitle}>Seu perfil</Text>
@@ -494,9 +516,14 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.round,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 2,
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.cream,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarText: {
     color: '#72090E',

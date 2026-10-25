@@ -33,6 +33,7 @@ export const theme = {
     darkTransparent: 'rgba(11, 11, 13, 0.24)',
     rating: '#F59E0B',
     danger: '#FF6B72',
+    success: '#22C55E',
     benefitSurfaceStart: '#FFF5E1',
     benefitSurfaceEnd: '#FFF0D2',
     benefitTitle: '#1A1A1A',

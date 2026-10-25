@@ -1,7 +1,9 @@
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
+import { VoiceNoteRecorder } from '@/components/voice-note/VoiceNoteRecorder'; // novo
 import { collectionService } from '@/services/collection.service';
 import { moviesService } from '@/services/movies.service';
 import { ratingsService } from '@/services/ratings.service';
+import { getVoiceNoteUri, removeVoiceNote, saveVoiceNote } from '@/services/voice-note.service'; // novo
 import { theme } from '@/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +28,7 @@ export default function RateMovieScreen() {
   const [rating, setRating] = useState(0);
   const [rewatch, setRewatch] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [voiceNoteUri, setVoiceNoteUri] = useState<string | null>(null);
 
   const loadMovie = useCallback(async () => {
     if (!movieId) {
@@ -48,6 +51,7 @@ export default function RateMovieScreen() {
       setRating(collectionState.movie.userState.rating ?? 0);
       setFavorite(collectionState.movie.userState.favorite);
       setRewatch(collectionState.movie.userState.rewatch);
+      setVoiceNoteUri(getVoiceNoteUri(movieId));
       setSaved(false);
     } catch (error: unknown) {
       const message =
@@ -87,6 +91,16 @@ export default function RateMovieScreen() {
         watchlist: false,
       });
 
+      try {
+        if (voiceNoteUri === null) {
+          removeVoiceNote(movieId);
+        } else if (voiceNoteUri !== getVoiceNoteUri(movieId)) {
+          await saveVoiceNote(movieId, voiceNoteUri);
+        }
+      } catch {
+        // O áudio é opcional: se falhar, a avaliação continua salva.
+      }
+
       setMovie((currentMovie) => {
         if (!currentMovie) {
           return currentMovie;
@@ -106,7 +120,7 @@ export default function RateMovieScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [favorite, movie, movieId, rating, rewatch]);
+  }, [favorite, movie, movieId, rating, rewatch, voiceNoteUri]);
 
   if (saved && movie) {
     return (
@@ -252,6 +266,16 @@ export default function RateMovieScreen() {
                   <View style={[styles.switchThumb, rewatch && styles.switchThumbActive]} />
                 </Pressable>
               </View>
+            </View>
+
+            <View style={styles.toggleBlock}>
+              <View>
+                <Text style={styles.toggleTitle}>Comentário em áudio</Text>
+                <Text style={styles.toggleSubtitle}>
+                  Grave o que você achou do filme (opcional)
+                </Text>
+              </View>
+              <VoiceNoteRecorder onChange={setVoiceNoteUri} uri={voiceNoteUri} />
             </View>
 
             {actionErrorMessage ? <Text style={styles.errorText}>{actionErrorMessage}</Text> : null}
@@ -490,7 +514,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.round,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.success,
   },
   successTitle: {
     marginTop: theme.spacing.lg,

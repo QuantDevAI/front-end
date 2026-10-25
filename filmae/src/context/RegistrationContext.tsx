@@ -52,9 +52,10 @@ function readDraft(): RegistrationDraft {
 
     const parsed = JSON.parse(raw) as Partial<RegistrationDraft>;
     return {
-      account: parsed.account?.email && parsed.account.name
-        ? { email: parsed.account.email, name: parsed.account.name }
-        : null,
+      account:
+        parsed.account?.email && parsed.account.name
+          ? { email: parsed.account.email, name: parsed.account.name }
+          : null,
       cinephileStory: parsed.cinephileStory ?? '',
       favoriteMovieIds: Array.isArray(parsed.favoriteMovieIds) ? parsed.favoriteMovieIds : [],
       genreIds: Array.isArray(parsed.genreIds) ? parsed.genreIds : [],
@@ -98,7 +99,9 @@ function toAccount(draftAccount: RegistrationDraft['account']): RegistrationAcco
 
 export function RegistrationProvider({ children }: PropsWithChildren) {
   const initialDraft = readDraft();
-  const [account, setAccount] = useState<RegistrationAccount | null>(() => toAccount(initialDraft.account));
+  const [account, setAccount] = useState<RegistrationAccount | null>(() =>
+    toAccount(initialDraft.account),
+  );
   const [cinephileStory, setCinephileStory] = useState(initialDraft.cinephileStory);
   const [genreIds, setGenreIds] = useState<string[]>(initialDraft.genreIds);
   const [favoriteMovieIds, setFavoriteMovieIds] = useState<string[]>(initialDraft.favoriteMovieIds);

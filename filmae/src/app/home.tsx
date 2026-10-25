@@ -16,6 +16,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useProfilePhoto } from '@/hooks/useProfilePhoto';
+import { Image } from 'expo-image';
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
@@ -25,6 +27,7 @@ export default function HomeScreen() {
     null,
   );
   const userName = homeData?.user.name?.trim() || 'Cinéfilo';
+  const photoUri = useProfilePhoto(homeData?.user.id);
 
   const posterSize = useMemo(() => {
     const horizontalPadding = theme.spacing.xxl * 2;
@@ -141,7 +144,15 @@ export default function HomeScreen() {
                   onPress={openProfile}
                   style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}
                 >
-                  <Text style={styles.avatarText}>{userName.charAt(0)}</Text>
+                  {photoUri ? (
+                    <Image
+                      contentFit="cover"
+                      source={{ uri: photoUri }}
+                      style={styles.avatarImage}
+                    />
+                  ) : (
+                    <Text style={styles.avatarText}>{userName.charAt(0)}</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -346,9 +357,14 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.round,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 2,
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.cream,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarText: {
     color: '#72090E',

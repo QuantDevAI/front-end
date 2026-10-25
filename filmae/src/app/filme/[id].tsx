@@ -1,4 +1,6 @@
 import { AppBottomNav } from '@/components/navigation/AppBottomNav';
+import { VoiceNotePlayer } from '@/components/voice-note/VoiceNotePlayer'; // novo
+import { useVoiceNote } from '@/hooks/useVoiceNote'; // novo
 import { collectionService } from '@/services/collection.service';
 import { moviesService } from '@/services/movies.service';
 import { ratingsService } from '@/services/ratings.service';
@@ -15,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function MovieDetailScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const movieId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const voiceNote = useVoiceNote(movieId);
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -426,6 +429,15 @@ export default function MovieDetailScreen() {
                   </Pressable>
                 </View>
               </View>
+              {voiceNote.uri ? (
+                <View style={styles.ratingCard}>
+                  <Text style={styles.ratingTitle}>Seu comentário em áudio</Text>
+                  <VoiceNotePlayer
+                    key={`${voiceNote.uri}-${voiceNote.version}`}
+                    uri={voiceNote.uri}
+                  />
+                </View>
+              ) : null}
             </View>
           </ScrollView>
         ) : (
